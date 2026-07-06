@@ -40,38 +40,42 @@
             </div>
         </div>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title">Add team member</h2>
+        @if ($canAddUsers)
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Add team member</h2>
+                </div>
+                <form method="POST" action="{{ route('organization.users.store') }}" class="panel-body space-y-4">
+                    @csrf
+                    <div>
+                        <x-input-label for="name" value="Full name" />
+                        <x-text-input id="name" name="name" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="email" value="Work email" />
+                        <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="password" value="Temporary password" />
+                        <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="role_id" value="Organization role" />
+                        <select id="role_id" name="role_id" class="mt-1 block w-full">
+                            @foreach ($organizationRoles as $role)
+                                @if ($canManageUsers || $role->slug !== \App\Enums\OrganizationRole::ClientAdmin->value)
+                                    <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('role_id')" class="mt-2" />
+                    </div>
+                    <x-primary-button>Add member</x-primary-button>
+                </form>
             </div>
-            <form method="POST" action="{{ route('organization.users.store') }}" class="panel-body space-y-4">
-                @csrf
-                <div>
-                    <x-input-label for="name" value="Full name" />
-                    <x-text-input id="name" name="name" class="mt-1 block w-full" required />
-                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
-                </div>
-                <div>
-                    <x-input-label for="email" value="Work email" />
-                    <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" required />
-                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                </div>
-                <div>
-                    <x-input-label for="password" value="Temporary password" />
-                    <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required />
-                    <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                </div>
-                <div>
-                    <x-input-label for="role_id" value="Organization role" />
-                    <select id="role_id" name="role_id" class="mt-1 block w-full">
-                        @foreach ($organizationRoles as $role)
-                            <option value="{{ $role->id }}">{{ $role->name }}</option>
-                        @endforeach
-                    </select>
-                    <x-input-error :messages="$errors->get('role_id')" class="mt-2" />
-                </div>
-                <x-primary-button>Add member</x-primary-button>
-            </form>
-        </div>
+        @endif
     </div>
 </x-app-layout>

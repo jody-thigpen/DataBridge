@@ -17,9 +17,19 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(OrganizationContext $organizationContext): View
+    public function index(Request $request, OrganizationContext $organizationContext): View
     {
         $organization = $organizationContext->current();
+        $user = $request->user();
+
+        abort_unless(
+            $user->hasPermission(Permission::OrgUsersManage, $organization)
+            || $user->hasPermission(Permission::OrgUsersInvite, $organization),
+            403,
+        );
+
+        $canManageUsers = $user->hasPermission(Permission::OrgUsersManage, $organization);
+        $canAddUsers = $canManageUsers || $user->hasPermission(Permission::OrgUsersInvite, $organization);
 
         $users = User::query()
             ->whereHas('roleAssignments', fn ($query) => $query->where('organization_id', $organization->id))
@@ -32,7 +42,7 @@ class UserController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('organization.users.index', compact('organization', 'users', 'organizationRoles'));
+        return view('organization.users.index', compact('organization', 'users', 'organizationRoles', 'canManageUsers', 'canAddUsers'));
     }
 
     public function store(Request $request, OrganizationContext $organizationContext): RedirectResponse

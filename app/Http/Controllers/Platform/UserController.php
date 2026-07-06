@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Platform;
 
+use App\Enums\Permission;
 use App\Enums\PlatformRole;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
@@ -15,8 +16,10 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $canManageUsers = $request->user()?->hasPermission(Permission::PlatformUsersManage) ?? false;
+
         $users = User::query()
             ->whereHas('roleAssignments', fn ($query) => $query->whereNull('organization_id'))
             ->with(['roleAssignments.role'])
@@ -29,11 +32,13 @@ class UserController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('platform.users.index', compact('users', 'platformRoles'));
+        return view('platform.users.index', compact('users', 'platformRoles', 'canManageUsers'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()?->hasPermission(Permission::PlatformUsersManage), 403);
+
         $platformRoleIds = Role::query()
             ->where('scope', 'platform')
             ->where('slug', '!=', PlatformRole::SuperAdmin->value)

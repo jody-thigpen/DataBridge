@@ -41,37 +41,43 @@
         </div>
 
         <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title">Add platform user</h2>
-            </div>
-            <form method="POST" action="{{ route('platform.users.store') }}" class="panel-body space-y-4">
-                @csrf
-                <div>
-                    <x-input-label for="name" value="Full name" />
-                    <x-text-input id="name" name="name" class="mt-1 block w-full" required />
-                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            @if ($canManageUsers)
+                <div class="panel-header">
+                    <h2 class="panel-title">Add platform user</h2>
                 </div>
-                <div>
-                    <x-input-label for="email" value="Work email" />
-                    <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" required />
-                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                <form method="POST" action="{{ route('platform.users.store') }}" class="panel-body space-y-4">
+                    @csrf
+                    <div>
+                        <x-input-label for="name" value="Full name" />
+                        <x-text-input id="name" name="name" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="email" value="Work email" />
+                        <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="password" value="Temporary password" />
+                        <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="role_id" value="Platform role" />
+                        <select id="role_id" name="role_id" class="mt-1 block w-full">
+                            @foreach ($platformRoles as $role)
+                                <option value="{{ $role->id }}">{{ $role->name }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('role_id')" class="mt-2" />
+                    </div>
+                    <x-primary-button>Create account</x-primary-button>
+                </form>
+            @else
+                <div class="panel-body text-sm text-enterprise-600">
+                    You can view staff accounts here. Creating platform users requires the platform user management permission.
                 </div>
-                <div>
-                    <x-input-label for="password" value="Temporary password" />
-                    <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required />
-                    <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                </div>
-                <div>
-                    <x-input-label for="role_id" value="Platform role" />
-                    <select id="role_id" name="role_id" class="mt-1 block w-full">
-                        @foreach ($platformRoles as $role)
-                            <option value="{{ $role->id }}">{{ $role->name }}</option>
-                        @endforeach
-                    </select>
-                    <x-input-error :messages="$errors->get('role_id')" class="mt-2" />
-                </div>
-                <x-primary-button>Create account</x-primary-button>
-            </form>
+            @endif
         </div>
     </div>
 </x-app-layout>

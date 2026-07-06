@@ -27,7 +27,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('platform')->prefix('platform')->name('platform.')->group(function () {
         Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+        Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+        Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
         Route::get('/clients/{organization}', [ClientController::class, 'show'])->name('clients.show');
+        Route::post('/clients/{organization}/users', [ClientController::class, 'storeUser'])->name('clients.users.store');
         Route::post('/clients/{organization}/enter', [ClientController::class, 'enter'])->name('clients.enter');
 
         Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');

@@ -3,7 +3,13 @@
         <x-page-header
             title="Client organizations"
             subtitle="All registered client accounts and assigned users."
-        />
+        >
+            @if ($canManageClients)
+                <x-slot name="actions">
+                    <a href="{{ route('platform.clients.create') }}" class="btn-primary">New client</a>
+                </x-slot>
+            @endif
+        </x-page-header>
     </x-slot>
 
     <div class="panel">
