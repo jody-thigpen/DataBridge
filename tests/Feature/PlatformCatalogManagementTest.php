@@ -1,0 +1,130 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\PlatformRole;
+use App\Enums\SearchTypeCode;
+use App\Models\DataSource;
+use App\Models\Organization;
+use App\Models\ScreeningPackage;
+use App\Models\SearchType;
+use App\Models\User;
+use Database\Seeders\InformDataDataSourceSeeder;
+use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SearchTypeSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PlatformCatalogManagementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RoleAndPermissionSeeder::class);
+        $this->seed(InformDataDataSourceSeeder::class);
+        $this->seed(SearchTypeSeeder::class);
+    }
+
+    public function test_search_types_are_seeded_for_informdata(): void
+    {
+        $this->assertDatabaseCount('search_types', 3);
+        $this->assertDatabaseHas('search_types', ['code' => SearchTypeCode::CountyCriminal->value]);
+        $this->assertDatabaseHas('search_types', ['code' => SearchTypeCode::NationalCriminal->value]);
+        $this->assertDatabaseHas('search_types', ['code' => SearchTypeCode::SocialSecurityTrace->value]);
+    }
+
+    public function test_platform_admin_can_create_package_with_searches_and_data_sources(): void
+    {
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $county = SearchType::query()->where('code', SearchTypeCode::CountyCriminal->value)->firstOrFail();
+        $national = SearchType::query()->where('code', SearchTypeCode::NationalCriminal->value)->firstOrFail();
+        $dataSource = DataSource::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('platform.packages.store'), [
+                'name' => 'Standard Criminal Package',
+                'slug' => 'standard-criminal-package',
+                'base_price' => '49.95',
+                'description' => 'County and national criminal searches.',
+                'items' => [
+                    ['search_type_id' => $county->id, 'data_source_id' => $dataSource->id],
+                    ['search_type_id' => $national->id, 'data_source_id' => $dataSource->id],
+                ],
+            ])
+            ->assertRedirect();
+
+        $package = ScreeningPackage::query()->where('slug', 'standard-criminal-package')->first();
+
+        $this->assertNotNull($package);
+        $this->assertSame('49.95', $package->base_price);
+        $this->assertCount(2, $package->searchTypes);
+    }
+
+    public function test_platform_admin_can_set_client_package_price_override(): void
+    {
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
+        $package = ScreeningPackage::query()->create([
+            'name' => 'Basic Package',
+            'slug' => 'basic-package',
+            'base_price' => 40.00,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('platform.clients.package-prices.update', $organization), [
+                'prices' => [
+                    ['screening_package_id' => $package->id, 'price' => '35.00'],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('35.00', $package->fresh()->priceForOrganization($organization));
+    }
+
+    public function test_support_user_cannot_manage_catalog(): void
+    {
+        $support = User::factory()->create(['email_verified_at' => now()]);
+        $support->assignRole(PlatformRole::Support);
+
+        $this->actingAs($support)
+            ->get(route('platform.search-types.create'))
+            ->assertForbidden();
+
+        $this->actingAs($support)
+            ->get(route('platform.packages.create'))
+            ->assertForbidden();
+    }
+
+    public function test_report_request_form_lists_active_packages_with_client_price(): void
+    {
+        $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+            'current_organization_id' => $organization->id,
+        ]);
+        $user->assignRole(\App\Enums\OrganizationRole::Recruiter, $organization);
+
+        session(['organization_id' => $organization->id]);
+
+        $package = ScreeningPackage::query()->create([
+            'name' => 'Executive Package',
+            'slug' => 'executive-package',
+            'base_price' => 99.00,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('reports.requests.create'))
+            ->assertOk()
+            ->assertSee('Executive Package')
+            ->assertSee('$99.00');
+    }
+}

@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Role;
+use App\Models\ScreeningPackage;
 use App\Models\User;
 use App\Services\OrganizationContext;
 use Illuminate\Http\RedirectResponse;
@@ -95,7 +96,21 @@ class ClientController extends Controller
             ? Role::query()->where('scope', 'organization')->orderBy('sort_order')->get()
             : collect();
 
-        return view('platform.clients.show', compact('organization', 'canManageClients', 'organizationRoles'));
+        $canManageCatalog = $request->user()?->hasPermission(Permission::PlatformCatalogManage) ?? false;
+
+        $packages = ScreeningPackage::query()
+            ->with(['organizationPrices' => fn ($query) => $query->where('organization_id', $organization->id)])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('platform.clients.show', compact(
+            'organization',
+            'canManageClients',
+            'canManageCatalog',
+            'organizationRoles',
+            'packages',
+        ));
     }
 
     public function storeUser(Request $request, Organization $organization): RedirectResponse

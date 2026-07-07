@@ -5,6 +5,9 @@ use App\Http\Controllers\OrganizationSwitchController;
 use App\Http\Controllers\Platform\ClientController;
 use App\Http\Controllers\Platform\DataSourceController;
 use App\Http\Controllers\Platform\ImpersonationController;
+use App\Http\Controllers\Platform\OrganizationPackagePriceController;
+use App\Http\Controllers\Platform\ScreeningPackageController;
+use App\Http\Controllers\Platform\SearchTypeController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
 use App\Http\Controllers\Organization\BillingController;
 use App\Http\Controllers\Organization\ProfileController as OrganizationProfileController;
@@ -33,6 +36,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/clients/{organization}', [ClientController::class, 'show'])->name('clients.show');
         Route::post('/clients/{organization}/users', [ClientController::class, 'storeUser'])->name('clients.users.store');
         Route::post('/clients/{organization}/enter', [ClientController::class, 'enter'])->name('clients.enter');
+        Route::patch('/clients/{organization}/package-prices', [OrganizationPackagePriceController::class, 'update'])->name('clients.package-prices.update');
+
+        Route::get('/search-types', [SearchTypeController::class, 'index'])->name('search-types.index');
+        Route::get('/search-types/create', [SearchTypeController::class, 'create'])->name('search-types.create');
+        Route::post('/search-types', [SearchTypeController::class, 'store'])->name('search-types.store');
+        Route::get('/search-types/{searchType}/edit', [SearchTypeController::class, 'edit'])->name('search-types.edit');
+        Route::patch('/search-types/{searchType}', [SearchTypeController::class, 'update'])->name('search-types.update');
+
+        Route::get('/packages', [ScreeningPackageController::class, 'index'])->name('packages.index');
+        Route::get('/packages/create', [ScreeningPackageController::class, 'create'])->name('packages.create');
+        Route::post('/packages', [ScreeningPackageController::class, 'store'])->name('packages.store');
+        Route::get('/packages/{screeningPackage}', [ScreeningPackageController::class, 'show'])->name('packages.show');
+        Route::get('/packages/{screeningPackage}/edit', [ScreeningPackageController::class, 'edit'])->name('packages.edit');
+        Route::patch('/packages/{screeningPackage}', [ScreeningPackageController::class, 'update'])->name('packages.update');
 
         Route::get('/data-sources', [DataSourceController::class, 'index'])->name('data-sources.index');
         Route::get('/data-sources/create', [DataSourceController::class, 'create'])->name('data-sources.create');

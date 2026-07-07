@@ -55,6 +55,11 @@ class Organization extends Model
             ->withTimestamps();
     }
 
+    public function packagePrices(): HasMany
+    {
+        return $this->hasMany(OrganizationPackagePrice::class);
+    }
+
     public function isAncestorOf(self $organization): bool
     {
         $parent = $organization->parent;

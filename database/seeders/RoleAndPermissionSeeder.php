@@ -22,6 +22,7 @@ class RoleAndPermissionSeeder extends Seeder
         'platform.users.manage' => 'Manage platform users',
         'platform.settings.manage' => 'Manage platform settings',
         'platform.data_sources.manage' => 'Manage external data source connections',
+        'platform.catalog.manage' => 'Manage search types, packages, and client pricing',
         'platform.audit.view' => 'View platform audit logs',
         'org.users.manage' => 'Manage organization users',
         'org.users.invite' => 'Invite organization users',
@@ -83,6 +84,7 @@ class RoleAndPermissionSeeder extends Seeder
                     PermissionEnum::PlatformUsersManage->value,
                     PermissionEnum::PlatformSettingsManage->value,
                     PermissionEnum::PlatformDataSourcesManage->value,
+                    PermissionEnum::PlatformCatalogManage->value,
                     PermissionEnum::PlatformAuditView->value,
                 ],
             ],
@@ -93,6 +95,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'permissions' => [
                     PermissionEnum::PlatformOrganizationsManage->value,
                     PermissionEnum::PlatformDataSourcesManage->value,
+                    PermissionEnum::PlatformCatalogManage->value,
                     PermissionEnum::PlatformAuditView->value,
                 ],
             ],

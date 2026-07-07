@@ -39,6 +39,8 @@ class NavigationMenu
                 'items' => [
                     $this->item('Clients', 'platform.clients.index', ['platform.clients.*']),
                     $this->item('Data sources', 'platform.data-sources.index', ['platform.data-sources.*']),
+                    $this->item('Search types', 'platform.search-types.index', ['platform.search-types.*']),
+                    $this->item('Packages', 'platform.packages.index', ['platform.packages.*']),
                     $this->item('Platform users', 'platform.users.index', ['platform.users.*']),
                 ],
             ];

@@ -17,14 +17,18 @@
             </div>
 
             <div>
-                <x-input-label for="package" value="Screening package" />
-                <select id="package" name="package" class="mt-1 block w-full" required>
+                <x-input-label for="screening_package_id" value="Screening package" />
+                <select id="screening_package_id" name="screening_package_id" class="mt-1 block w-full" required>
                     <option value="">Select package</option>
-                    <option value="standard_criminal" @selected(old('package') === 'standard_criminal')>Standard criminal</option>
-                    <option value="employment_verification" @selected(old('package') === 'employment_verification')>Employment verification</option>
-                    <option value="comprehensive" @selected(old('package') === 'comprehensive')>Comprehensive package</option>
+                    @forelse ($packages as $package)
+                        <option value="{{ $package->id }}" @selected(old('screening_package_id') == $package->id)>
+                            {{ $package->name }} — {{ $package->formattedPriceForOrganization($organization) }}
+                        </option>
+                    @empty
+                        <option value="" disabled>No active packages available</option>
+                    @endforelse
                 </select>
-                <x-input-error :messages="$errors->get('package')" class="mt-2" />
+                <x-input-error :messages="$errors->get('screening_package_id')" class="mt-2" />
             </div>
 
             <div>
