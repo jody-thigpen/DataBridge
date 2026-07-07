@@ -62,6 +62,12 @@
                         </div>
                     @endif
 
+                    @if (session('error'))
+                        <div class="alert-error">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     {{ $slot }}
                 </main>
             </div>

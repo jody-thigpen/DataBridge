@@ -38,6 +38,7 @@ class NavigationMenu
                 'label' => 'Platform administration',
                 'items' => [
                     $this->item('Clients', 'platform.clients.index', ['platform.clients.*']),
+                    $this->item('Data sources', 'platform.data-sources.index', ['platform.data-sources.*']),
                     $this->item('Platform users', 'platform.users.index', ['platform.users.*']),
                 ],
             ];

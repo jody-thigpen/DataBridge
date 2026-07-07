@@ -164,6 +164,10 @@
         @apply mb-4 rounded border border-accent/30 bg-accent-muted px-4 py-3 text-sm text-accent-darker;
     }
 
+    .alert-error {
+        @apply mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900;
+    }
+
     .impersonation-banner {
         @apply border-b border-amber-200 bg-amber-50 text-sm text-amber-950;
     }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationSwitchController;
 use App\Http\Controllers\Platform\ClientController;
+use App\Http\Controllers\Platform\DataSourceController;
 use App\Http\Controllers\Platform\ImpersonationController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
 use App\Http\Controllers\Organization\BillingController;
@@ -32,6 +33,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/clients/{organization}', [ClientController::class, 'show'])->name('clients.show');
         Route::post('/clients/{organization}/users', [ClientController::class, 'storeUser'])->name('clients.users.store');
         Route::post('/clients/{organization}/enter', [ClientController::class, 'enter'])->name('clients.enter');
+
+        Route::get('/data-sources', [DataSourceController::class, 'index'])->name('data-sources.index');
+        Route::get('/data-sources/create', [DataSourceController::class, 'create'])->name('data-sources.create');
+        Route::post('/data-sources', [DataSourceController::class, 'store'])->name('data-sources.store');
+        Route::get('/data-sources/{dataSource}', [DataSourceController::class, 'show'])->name('data-sources.show');
+        Route::get('/data-sources/{dataSource}/edit', [DataSourceController::class, 'edit'])->name('data-sources.edit');
+        Route::patch('/data-sources/{dataSource}', [DataSourceController::class, 'update'])->name('data-sources.update');
+        Route::post('/data-sources/{dataSource}/test', [DataSourceController::class, 'test'])->name('data-sources.test');
 
         Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');
         Route::post('/users', [PlatformUserController::class, 'store'])->name('users.store');
