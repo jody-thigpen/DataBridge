@@ -6,7 +6,6 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\OrganizationPackagePrice;
-use App\Models\ScreeningPackage;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,13 +17,23 @@ class OrganizationPackagePriceController extends Controller
         abort_unless($this->canManageCatalog($request->user()), 403);
 
         $validated = $request->validate([
-            'prices' => ['required', 'array'],
-            'prices.*.screening_package_id' => ['required', 'exists:screening_packages,id'],
-            'prices.*.price' => ['nullable', 'numeric', 'min:0'],
+            'packages' => ['present', 'array'],
+            'packages.*.screening_package_id' => ['required', 'exists:screening_packages,id'],
+            'packages.*.assigned' => ['sometimes', 'boolean'],
+            'packages.*.price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        foreach ($validated['prices'] as $row) {
+        $assignedPackageIds = [];
+
+        foreach ($validated['packages'] as $row) {
             $packageId = (int) $row['screening_package_id'];
+            $isAssigned = filter_var($row['assigned'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            if (! $isAssigned) {
+                continue;
+            }
+
+            $assignedPackageIds[] = $packageId;
             $price = $row['price'] ?? null;
 
             if ($price === null || $price === '') {
@@ -47,7 +56,14 @@ class OrganizationPackagePriceController extends Controller
             );
         }
 
-        return back()->with('status', "Package pricing updated for {$organization->name}.");
+        $organization->screeningPackages()->sync($assignedPackageIds);
+
+        OrganizationPackagePrice::query()
+            ->where('organization_id', $organization->id)
+            ->whereNotIn('screening_package_id', $assignedPackageIds)
+            ->delete();
+
+        return back()->with('status', "Package assignments and pricing updated for {$organization->name}.");
     }
 
     private function canManageCatalog(?User $user): bool

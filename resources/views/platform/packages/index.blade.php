@@ -16,6 +16,7 @@
                     <tr>
                         <th>Package</th>
                         <th>Searches</th>
+                        <th>Clients</th>
                         <th>Base price</th>
                         <th>Status</th>
                         <th class="text-right">Actions</th>
@@ -26,6 +27,7 @@
                         <tr>
                             <td class="font-medium text-enterprise-900">{{ $package->name }}</td>
                             <td class="text-enterprise-600">{{ $package->search_types_count }}</td>
+                            <td class="text-enterprise-600">{{ $package->organizations_count }}</td>
                             <td class="text-enterprise-600">{{ $package->formattedBasePrice() }}</td>
                             <td>
                                 <span @class(['badge', 'badge-success' => $package->is_active, 'badge-muted' => ! $package->is_active])>
@@ -38,7 +40,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-10 text-center text-enterprise-500">No packages configured.</td>
+                            <td colspan="6" class="py-10 text-center text-enterprise-500">No packages configured.</td>
                         </tr>
                     @endforelse
                 </tbody>

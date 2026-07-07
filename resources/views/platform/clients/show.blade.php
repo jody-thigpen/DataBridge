@@ -123,10 +123,10 @@
         @endif
     </div>
 
-    @if ($packages->isNotEmpty())
+    @if ($canManageCatalog ? $allPackages->isNotEmpty() : $assignedPackages->isNotEmpty())
         <div class="panel mt-5">
             <div class="panel-header">
-                <h2 class="panel-title">Package pricing</h2>
+                <h2 class="panel-title">Assigned packages</h2>
             </div>
             @if ($canManageCatalog)
                 <form method="POST" action="{{ route('platform.clients.package-prices.update', $organization) }}">
@@ -136,6 +136,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th>Assigned</th>
                                     <th>Package</th>
                                     <th>Base price</th>
                                     <th>Client override</th>
@@ -143,34 +144,48 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($packages as $package)
+                                @foreach ($allPackages as $package)
                                     @php
+                                        $isAssigned = in_array($package->id, $assignedPackageIds, true);
                                         $override = $package->organizationPrices->first();
                                     @endphp
                                     <tr>
+                                        <td>
+                                            <input type="hidden" name="packages[{{ $loop->index }}][screening_package_id]" value="{{ $package->id }}">
+                                            <input
+                                                type="checkbox"
+                                                name="packages[{{ $loop->index }}][assigned]"
+                                                value="1"
+                                                class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500"
+                                                @checked(old('packages.'.$loop->index.'.assigned', $isAssigned))
+                                            />
+                                        </td>
                                         <td class="font-medium text-enterprise-900">{{ $package->name }}</td>
                                         <td class="text-enterprise-600">{{ $package->formattedBasePrice() }}</td>
                                         <td>
-                                            <input type="hidden" name="prices[{{ $loop->index }}][screening_package_id]" value="{{ $package->id }}">
                                             <x-text-input
-                                                name="prices[{{ $loop->index }}][price]"
+                                                name="packages[{{ $loop->index }}][price]"
                                                 type="number"
                                                 step="0.01"
                                                 min="0"
                                                 class="block w-full max-w-[10rem]"
-                                                :value="old('prices.'.$loop->index.'.price', $override?->price)"
+                                                :value="old('packages.'.$loop->index.'.price', $override?->price)"
                                                 placeholder="Use base price"
                                             />
                                         </td>
-                                        <td class="text-enterprise-600">{{ $package->formattedPriceForOrganization($organization) }}</td>
+                                        <td class="text-enterprise-600">
+                                            {{ $isAssigned ? $package->formattedPriceForOrganization($organization) : '—' }}
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                     <div class="border-t border-enterprise-200 px-4 py-3">
-                        <p class="mb-3 text-sm text-enterprise-600">Leave override blank to use the package base price.</p>
-                        <x-primary-button>Save client pricing</x-primary-button>
+                        <p class="mb-3 text-sm text-enterprise-600">
+                            Check packages to make them available to this client. Leave the override blank to use the base price.
+                        </p>
+                        <x-primary-button>Save assignments and pricing</x-primary-button>
                     </div>
                 </form>
             @else
@@ -184,7 +199,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($packages as $package)
+                            @foreach ($assignedPackages as $package)
                                 <tr>
                                     <td class="font-medium text-enterprise-900">{{ $package->name }}</td>
                                     <td class="text-enterprise-600">{{ $package->formattedBasePrice() }}</td>
@@ -195,6 +210,15 @@
                     </table>
                 </div>
             @endif
+        </div>
+    @elseif ($canManageCatalog)
+        <div class="panel mt-5">
+            <div class="panel-header">
+                <h2 class="panel-title">Assigned packages</h2>
+            </div>
+            <div class="panel-body text-sm text-enterprise-600">
+                No active packages are available. Create a package first, then assign it to this client.
+            </div>
         </div>
     @endif
 </x-app-layout>

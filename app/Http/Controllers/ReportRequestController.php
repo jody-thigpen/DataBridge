@@ -15,8 +15,7 @@ class ReportRequestController extends Controller
     {
         $organization = $organizationContext->current();
 
-        $packages = ScreeningPackage::query()
-            ->where('is_active', true)
+        $packages = $organization->assignedActivePackages()
             ->orderBy('name')
             ->get();
 
@@ -30,9 +29,7 @@ class ReportRequestController extends Controller
     {
         $organization = $organizationContext->current();
 
-        $packageIds = ScreeningPackage::query()
-            ->where('is_active', true)
-            ->pluck('id');
+        $packageIds = $organization->assignedActivePackages()->pluck('screening_packages.id');
 
         $validated = $request->validate([
             'subject_name' => ['required', 'string', 'max:255'],

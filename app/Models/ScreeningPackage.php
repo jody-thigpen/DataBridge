@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,6 +46,29 @@ class ScreeningPackage extends Model
     public function organizationPrices(): HasMany
     {
         return $this->hasMany(OrganizationPackagePrice::class);
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_screening_package')
+            ->withTimestamps()
+            ->orderBy('name');
+    }
+
+    public function scopeAssignedTo(Builder $query, Organization $organization): Builder
+    {
+        return $query->whereHas('organizations', fn (Builder $relation) => $relation->where('organizations.id', $organization->id));
+    }
+
+    public function isAssignedTo(?Organization $organization): bool
+    {
+        if ($organization === null) {
+            return false;
+        }
+
+        return $this->organizations()
+            ->where('organizations.id', $organization->id)
+            ->exists();
     }
 
     public function priceForOrganization(?Organization $organization): string

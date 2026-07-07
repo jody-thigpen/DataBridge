@@ -98,18 +98,30 @@ class ClientController extends Controller
 
         $canManageCatalog = $request->user()?->hasPermission(Permission::PlatformCatalogManage) ?? false;
 
-        $packages = ScreeningPackage::query()
+        $assignedPackageIds = $organization->screeningPackages()->pluck('screening_packages.id')->all();
+
+        $allPackages = ScreeningPackage::query()
             ->with(['organizationPrices' => fn ($query) => $query->where('organization_id', $organization->id)])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+
+        $assignedPackages = $canManageCatalog
+            ? $allPackages
+            : $organization->screeningPackages()
+                ->with(['organizationPrices' => fn ($query) => $query->where('organization_id', $organization->id)])
+                ->where('screening_packages.is_active', true)
+                ->orderBy('name')
+                ->get();
 
         return view('platform.clients.show', compact(
             'organization',
             'canManageClients',
             'canManageCatalog',
             'organizationRoles',
-            'packages',
+            'allPackages',
+            'assignedPackageIds',
+            'assignedPackages',
         ));
     }
 

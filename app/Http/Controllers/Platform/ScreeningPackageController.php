@@ -17,7 +17,7 @@ class ScreeningPackageController extends Controller
     public function index(Request $request): View
     {
         $packages = ScreeningPackage::query()
-            ->withCount('searchTypes')
+            ->withCount(['searchTypes', 'organizations'])
             ->orderBy('name')
             ->paginate(20);
 
@@ -60,15 +60,20 @@ class ScreeningPackageController extends Controller
 
     public function show(ScreeningPackage $screeningPackage): View
     {
-        $screeningPackage->load(['searchTypes']);
+        $screeningPackage->load(['searchTypes', 'organizations']);
 
         $dataSourcesById = \App\Models\DataSource::query()
             ->whereIn('id', $screeningPackage->searchTypes->pluck('pivot.data_source_id'))
             ->pluck('name', 'id');
 
+        $clientPricesByOrganizationId = $screeningPackage->organizationPrices()
+            ->whereIn('organization_id', $screeningPackage->organizations->pluck('id'))
+            ->pluck('price', 'organization_id');
+
         return view('platform.packages.show', [
             'package' => $screeningPackage,
             'dataSourcesById' => $dataSourcesById,
+            'clientPricesByOrganizationId' => $clientPricesByOrganizationId,
             'canManageCatalog' => $this->canManageCatalog(request()->user()),
         ]);
     }

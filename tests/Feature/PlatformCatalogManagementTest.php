@@ -66,7 +66,7 @@ class PlatformCatalogManagementTest extends TestCase
         $this->assertCount(2, $package->searchTypes);
     }
 
-    public function test_platform_admin_can_set_client_package_price_override(): void
+    public function test_platform_admin_can_assign_package_to_client_with_price_override(): void
     {
         $admin = User::factory()->create(['email_verified_at' => now()]);
         $admin->assignRole(PlatformRole::Admin);
@@ -81,13 +81,83 @@ class PlatformCatalogManagementTest extends TestCase
 
         $this->actingAs($admin)
             ->patch(route('platform.clients.package-prices.update', $organization), [
-                'prices' => [
-                    ['screening_package_id' => $package->id, 'price' => '35.00'],
+                'packages' => [
+                    ['screening_package_id' => $package->id, 'assigned' => '1', 'price' => '35.00'],
                 ],
             ])
             ->assertRedirect();
 
+        $this->assertTrue($package->fresh()->isAssignedTo($organization));
         $this->assertSame('35.00', $package->fresh()->priceForOrganization($organization));
+    }
+
+    public function test_package_can_be_assigned_to_multiple_clients_with_different_prices(): void
+    {
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $clientA = Organization::query()->create(['name' => 'Client A', 'slug' => 'client-a']);
+        $clientB = Organization::query()->create(['name' => 'Client B', 'slug' => 'client-b']);
+        $package = ScreeningPackage::query()->create([
+            'name' => 'Shared Package',
+            'slug' => 'shared-package',
+            'base_price' => 50.00,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('platform.clients.package-prices.update', $clientA), [
+                'packages' => [
+                    ['screening_package_id' => $package->id, 'assigned' => '1', 'price' => '45.00'],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->actingAs($admin)
+            ->patch(route('platform.clients.package-prices.update', $clientB), [
+                'packages' => [
+                    ['screening_package_id' => $package->id, 'assigned' => '1'],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('45.00', $package->fresh()->priceForOrganization($clientA));
+        $this->assertSame('50.00', $package->fresh()->priceForOrganization($clientB));
+        $this->assertCount(2, $package->fresh()->organizations);
+    }
+
+    public function test_unassigning_package_removes_client_price_override(): void
+    {
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
+        $package = ScreeningPackage::query()->create([
+            'name' => 'Basic Package',
+            'slug' => 'basic-package',
+            'base_price' => 40.00,
+            'is_active' => true,
+        ]);
+
+        $organization->screeningPackages()->attach($package->id);
+        $package->organizationPrices()->create([
+            'organization_id' => $organization->id,
+            'price' => 35.00,
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('platform.clients.package-prices.update', $organization), [
+                'packages' => [
+                    ['screening_package_id' => $package->id],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse($package->fresh()->isAssignedTo($organization));
+        $this->assertDatabaseMissing('organization_package_prices', [
+            'organization_id' => $organization->id,
+            'screening_package_id' => $package->id,
+        ]);
     }
 
     public function test_support_user_cannot_manage_catalog(): void
@@ -104,7 +174,7 @@ class PlatformCatalogManagementTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_report_request_form_lists_active_packages_with_client_price(): void
+    public function test_report_request_form_lists_only_assigned_packages_with_client_price(): void
     {
         $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
         $user = User::factory()->create([
@@ -115,17 +185,27 @@ class PlatformCatalogManagementTest extends TestCase
 
         session(['organization_id' => $organization->id]);
 
-        $package = ScreeningPackage::query()->create([
+        $assignedPackage = ScreeningPackage::query()->create([
             'name' => 'Executive Package',
             'slug' => 'executive-package',
             'base_price' => 99.00,
             'is_active' => true,
         ]);
 
+        $unassignedPackage = ScreeningPackage::query()->create([
+            'name' => 'Internal Package',
+            'slug' => 'internal-package',
+            'base_price' => 25.00,
+            'is_active' => true,
+        ]);
+
+        $organization->screeningPackages()->attach($assignedPackage->id);
+
         $this->actingAs($user)
             ->get(route('reports.requests.create'))
             ->assertOk()
             ->assertSee('Executive Package')
-            ->assertSee('$99.00');
+            ->assertSee('$99.00')
+            ->assertDontSee('Internal Package');
     }
 }

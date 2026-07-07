@@ -67,4 +67,40 @@
             </div>
         </div>
     </div>
+
+    <div class="panel mt-5">
+        <div class="panel-header"><h2 class="panel-title">Assigned clients</h2></div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Base price</th>
+                        <th>Client price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($package->organizations as $organization)
+                        @php
+                            $override = $clientPricesByOrganizationId[$organization->id] ?? null;
+                            $effectivePrice = $override !== null
+                                ? '$'.number_format((float) $override, 2)
+                                : $package->formattedBasePrice();
+                        @endphp
+                        <tr>
+                            <td class="font-medium text-enterprise-900">
+                                <a href="{{ route('platform.clients.show', $organization) }}" class="link-action">{{ $organization->name }}</a>
+                            </td>
+                            <td class="text-enterprise-600">{{ $package->formattedBasePrice() }}</td>
+                            <td class="text-enterprise-600">{{ $effectivePrice }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="py-10 text-center text-enterprise-500">This package is not assigned to any clients yet.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 </x-app-layout>

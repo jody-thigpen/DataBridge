@@ -60,6 +60,18 @@ class Organization extends Model
         return $this->hasMany(OrganizationPackagePrice::class);
     }
 
+    public function screeningPackages(): BelongsToMany
+    {
+        return $this->belongsToMany(ScreeningPackage::class, 'organization_screening_package')
+            ->withTimestamps()
+            ->orderBy('name');
+    }
+
+    public function assignedActivePackages(): BelongsToMany
+    {
+        return $this->screeningPackages()->where('screening_packages.is_active', true);
+    }
+
     public function isAncestorOf(self $organization): bool
     {
         $parent = $organization->parent;
