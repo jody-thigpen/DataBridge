@@ -18,18 +18,15 @@ class SearchTypeSeeder extends Seeder
         }
 
         $definitions = [
-            [
-                'code' => SearchTypeCode::CountyCriminal,
-                'sort_order' => 10,
-            ],
-            [
-                'code' => SearchTypeCode::NationalCriminal,
-                'sort_order' => 20,
-            ],
-            [
-                'code' => SearchTypeCode::SocialSecurityTrace,
-                'sort_order' => 30,
-            ],
+            ['code' => SearchTypeCode::NationalCriminal, 'sort_order' => 10],
+            ['code' => SearchTypeCode::CountyCriminal, 'sort_order' => 20],
+            ['code' => SearchTypeCode::CivilRecords, 'sort_order' => 30],
+            ['code' => SearchTypeCode::MotorVehicleRecords, 'sort_order' => 40],
+            ['code' => SearchTypeCode::MedicalCompliance, 'sort_order' => 50],
+            ['code' => SearchTypeCode::Verifications, 'sort_order' => 60],
+            ['code' => SearchTypeCode::International, 'sort_order' => 70],
+            ['code' => SearchTypeCode::SexOffender, 'sort_order' => 80],
+            ['code' => SearchTypeCode::SocialSecurityTrace, 'sort_order' => 90],
         ];
 
         foreach ($definitions as $definition) {

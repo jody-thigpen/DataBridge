@@ -30,10 +30,11 @@ class PlatformCatalogManagementTest extends TestCase
 
     public function test_search_types_are_seeded_for_informdata(): void
     {
-        $this->assertDatabaseCount('search_types', 3);
-        $this->assertDatabaseHas('search_types', ['code' => SearchTypeCode::CountyCriminal->value]);
-        $this->assertDatabaseHas('search_types', ['code' => SearchTypeCode::NationalCriminal->value]);
-        $this->assertDatabaseHas('search_types', ['code' => SearchTypeCode::SocialSecurityTrace->value]);
+        $this->assertDatabaseCount('search_types', count(SearchTypeCode::cases()));
+
+        foreach (SearchTypeCode::cases() as $code) {
+            $this->assertDatabaseHas('search_types', ['code' => $code->value]);
+        }
     }
 
     public function test_platform_admin_can_create_package_with_searches_and_data_sources(): void
