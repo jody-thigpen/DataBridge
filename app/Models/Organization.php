@@ -72,6 +72,16 @@ class Organization extends Model
         return $this->screeningPackages()->where('screening_packages.is_active', true);
     }
 
+    public function reportRequests(): HasMany
+    {
+        return $this->hasMany(ReportRequest::class);
+    }
+
+    public function searchTypeSettings(): HasMany
+    {
+        return $this->hasMany(OrganizationSearchTypeSetting::class);
+    }
+
     public function isAncestorOf(self $organization): bool
     {
         $parent = $organization->parent;

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
+use App\Enums\ReportRequestStatus;
+use App\Models\ReportRequest;
 use App\Models\ScreeningPackage;
 use App\Services\OrganizationContext;
+use App\Services\SearchReviewPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +18,7 @@ class ReportRequestController extends Controller
     public function create(OrganizationContext $organizationContext): View
     {
         $organization = $organizationContext->current();
+        abort_unless(auth()->user()?->hasPermission(Permission::OrgOrdersCreate, $organization), 403);
 
         $packages = $organization->assignedActivePackages()
             ->orderBy('name')
@@ -25,9 +30,13 @@ class ReportRequestController extends Controller
         ]);
     }
 
-    public function store(Request $request, OrganizationContext $organizationContext): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        OrganizationContext $organizationContext,
+        SearchReviewPolicy $searchReviewPolicy,
+    ): RedirectResponse {
         $organization = $organizationContext->current();
+        abort_unless($request->user()?->hasPermission(Permission::OrgOrdersCreate, $organization), 403);
 
         $packageIds = $organization->assignedActivePackages()->pluck('screening_packages.id');
 
@@ -38,10 +47,26 @@ class ReportRequestController extends Controller
         ]);
 
         $package = ScreeningPackage::query()->findOrFail($validated['screening_package_id']);
+        $requiresReview = $searchReviewPolicy->packageRequiresReview($package, $organization);
 
-        // Report orders will be persisted once vendor integrations are wired.
+        $reportRequest = ReportRequest::query()->create([
+            'organization_id' => $organization->id,
+            'screening_package_id' => $package->id,
+            'requested_by_user_id' => $request->user()->id,
+            'subject_name' => $validated['subject_name'],
+            'notes' => $validated['notes'] ?? null,
+            'price' => $package->priceForOrganization($organization),
+            'requires_review' => $requiresReview,
+            'status' => $requiresReview ? ReportRequestStatus::PendingReview : ReportRequestStatus::Submitted,
+            'submitted_at' => $requiresReview ? null : now(),
+        ]);
+
+        $message = $requiresReview
+            ? "Report request for {$validated['subject_name']} was submitted and is awaiting Saffhire review."
+            : "Report request for {$validated['subject_name']} was submitted for processing.";
+
         return redirect()
             ->route('reports.index')
-            ->with('status', "Report request for {$validated['subject_name']} ({$package->name}, {$package->formattedPriceForOrganization($organization)}) has been queued for processing.");
+            ->with('status', $message);
     }
 }

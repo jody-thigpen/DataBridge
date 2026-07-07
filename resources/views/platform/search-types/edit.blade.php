@@ -48,6 +48,11 @@
                 <input id="is_active" name="is_active" type="checkbox" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_active', $searchType->is_active))>
                 <x-input-label for="is_active" value="Active" class="mb-0" />
             </div>
+            <div class="flex items-center gap-2">
+                <input type="hidden" name="requires_review_before_submit" value="0">
+                <input id="requires_review_before_submit" name="requires_review_before_submit" type="checkbox" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('requires_review_before_submit', $searchType->requires_review_before_submit))>
+                <x-input-label for="requires_review_before_submit" value="Require Saffhire review before submitting to vendor" class="mb-0" />
+            </div>
             <x-primary-button>Save changes</x-primary-button>
         </div>
     </form>

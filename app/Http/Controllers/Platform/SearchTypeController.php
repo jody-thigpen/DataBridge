@@ -50,6 +50,7 @@ class SearchTypeController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            'requires_review_before_submit' => ['sometimes', 'boolean'],
         ]);
 
         $code = SearchTypeCode::from($validated['code']);
@@ -62,6 +63,7 @@ class SearchTypeController extends Controller
             'description' => $validated['description'] ?? $code->defaultDescription(),
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => $validated['is_active'] ?? true,
+            'requires_review_before_submit' => $validated['requires_review_before_submit'] ?? true,
         ]);
 
         return redirect()
@@ -92,6 +94,7 @@ class SearchTypeController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            'requires_review_before_submit' => ['sometimes', 'boolean'],
         ]);
 
         $searchType->update([
@@ -102,6 +105,7 @@ class SearchTypeController extends Controller
             'description' => $validated['description'],
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => $validated['is_active'] ?? false,
+            'requires_review_before_submit' => $validated['requires_review_before_submit'] ?? false,
         ]);
 
         return redirect()

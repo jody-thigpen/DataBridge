@@ -66,7 +66,8 @@ class ApplicationUiTest extends TestCase
         $this->actingAs($user)
             ->get(route('reports.index'))
             ->assertOk()
-            ->assertSee('Report registry');
+            ->assertSee('Report requests')
+            ->assertSee('No report requests submitted yet');
     }
 
     public function test_platform_user_can_exit_client_organization_view(): void

@@ -34,25 +34,38 @@ class NavigationMenu
         ];
 
         if ($user->isPlatformUser() && ! $this->impersonation->isImpersonating()) {
+            $platformItems = [
+                $this->item('Clients', 'platform.clients.index', ['platform.clients.*']),
+                $this->item('Data sources', 'platform.data-sources.index', ['platform.data-sources.*']),
+                $this->item('Search types', 'platform.search-types.index', ['platform.search-types.*']),
+                $this->item('Packages', 'platform.packages.index', ['platform.packages.*']),
+            ];
+
+            if ($user->hasPermission(Permission::PlatformReportRequestsView)) {
+                $platformItems[] = $this->item('Report requests', 'platform.report-requests.index', ['platform.report-requests.*']);
+            }
+
+            $platformItems[] = $this->item('Platform users', 'platform.users.index', ['platform.users.*']);
+
             $sections[] = [
                 'label' => 'Platform administration',
-                'items' => [
-                    $this->item('Clients', 'platform.clients.index', ['platform.clients.*']),
-                    $this->item('Data sources', 'platform.data-sources.index', ['platform.data-sources.*']),
-                    $this->item('Search types', 'platform.search-types.index', ['platform.search-types.*']),
-                    $this->item('Packages', 'platform.packages.index', ['platform.packages.*']),
-                    $this->item('Platform users', 'platform.users.index', ['platform.users.*']),
-                ],
+                'items' => $platformItems,
             ];
         }
 
         $organization = $this->organizationContext->current($user);
 
         if ($organization instanceof Organization) {
-            $workspaceItems = [
-                $this->item('New report request', 'reports.requests.create', ['reports.requests.*']),
-                $this->item('Reports', 'reports.index', ['reports.index']),
-            ];
+            $workspaceItems = [];
+
+            if ($user->hasPermission(Permission::OrgOrdersCreate, $organization)) {
+                $workspaceItems[] = $this->item('New report request', 'reports.requests.create', ['reports.requests.*']);
+            }
+
+            if ($user->hasPermission(Permission::OrgOrdersView, $organization)
+                || $user->hasPermission(Permission::OrgOrdersViewAll, $organization)) {
+                $workspaceItems[] = $this->item('Report requests', 'reports.index', ['reports.index']);
+            }
 
             if ($user->hasPermission(Permission::OrgUsersManage, $organization)
                 || $user->hasPermission(Permission::OrgUsersInvite, $organization)) {

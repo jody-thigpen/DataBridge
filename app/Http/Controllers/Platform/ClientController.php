@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Role;
 use App\Models\ScreeningPackage;
+use App\Models\SearchType;
 use App\Models\User;
 use App\Services\OrganizationContext;
 use Illuminate\Http\RedirectResponse;
@@ -114,6 +115,15 @@ class ClientController extends Controller
                 ->orderBy('name')
                 ->get();
 
+        $searchTypes = SearchType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $searchTypeSettings = $organization->searchTypeSettings()
+            ->get()
+            ->keyBy('search_type_id');
+
         return view('platform.clients.show', compact(
             'organization',
             'canManageClients',
@@ -122,6 +132,8 @@ class ClientController extends Controller
             'allPackages',
             'assignedPackageIds',
             'assignedPackages',
+            'searchTypes',
+            'searchTypeSettings',
         ));
     }
 

@@ -221,4 +221,51 @@
             </div>
         </div>
     @endif
+
+    @if ($canManageCatalog && $searchTypes->isNotEmpty())
+        <div class="panel mt-5">
+            <div class="panel-header">
+                <h2 class="panel-title">Search review overrides</h2>
+            </div>
+            <form method="POST" action="{{ route('platform.clients.search-review-settings.update', $organization) }}">
+                @csrf
+                @method('PATCH')
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Search type</th>
+                                <th>Default behavior</th>
+                                <th>Client override</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($searchTypes as $searchType)
+                                @php
+                                    $override = $searchTypeSettings->get($searchType->id);
+                                    $selected = old('settings.'.$loop->index.'.requires_review_before_submit', $override === null ? 'default' : ($override->requires_review_before_submit ? '1' : '0'));
+                                @endphp
+                                <tr>
+                                    <td class="font-medium text-enterprise-900">{{ $searchType->name }}</td>
+                                    <td class="text-enterprise-600">{{ $searchType->requires_review_before_submit ? 'Require review' : 'Auto-submit' }}</td>
+                                    <td>
+                                        <input type="hidden" name="settings[{{ $loop->index }}][search_type_id]" value="{{ $searchType->id }}">
+                                        <select name="settings[{{ $loop->index }}][requires_review_before_submit]" class="block w-full max-w-xs">
+                                            <option value="default" @selected($selected === 'default')>Use search default</option>
+                                            <option value="1" @selected($selected === '1')>Require review</option>
+                                            <option value="0" @selected($selected === '0')>Auto-submit</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-enterprise-200 px-4 py-3">
+                    <p class="mb-3 text-sm text-enterprise-600">Override whether each search requires Saffhire review before vendor submission for this client.</p>
+                    <x-primary-button>Save review overrides</x-primary-button>
+                </div>
+            </form>
+        </div>
+    @endif
 </x-app-layout>

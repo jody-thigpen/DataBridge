@@ -6,6 +6,8 @@ use App\Http\Controllers\Platform\ClientController;
 use App\Http\Controllers\Platform\DataSourceController;
 use App\Http\Controllers\Platform\ImpersonationController;
 use App\Http\Controllers\Platform\OrganizationPackagePriceController;
+use App\Http\Controllers\Platform\OrganizationSearchTypeSettingController;
+use App\Http\Controllers\Platform\ReportRequestController as PlatformReportRequestController;
 use App\Http\Controllers\Platform\ScreeningPackageController;
 use App\Http\Controllers\Platform\SearchTypeController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
@@ -37,6 +39,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/clients/{organization}/users', [ClientController::class, 'storeUser'])->name('clients.users.store');
         Route::post('/clients/{organization}/enter', [ClientController::class, 'enter'])->name('clients.enter');
         Route::patch('/clients/{organization}/package-prices', [OrganizationPackagePriceController::class, 'update'])->name('clients.package-prices.update');
+        Route::patch('/clients/{organization}/search-review-settings', [OrganizationSearchTypeSettingController::class, 'update'])->name('clients.search-review-settings.update');
+
+        Route::get('/report-requests', [PlatformReportRequestController::class, 'index'])->name('report-requests.index');
+        Route::get('/report-requests/{reportRequest}', [PlatformReportRequestController::class, 'show'])->name('report-requests.show');
+        Route::patch('/report-requests/{reportRequest}/assign', [PlatformReportRequestController::class, 'assign'])->name('report-requests.assign');
+        Route::patch('/report-requests/{reportRequest}/approve', [PlatformReportRequestController::class, 'approve'])->name('report-requests.approve');
+        Route::patch('/report-requests/{reportRequest}/reject', [PlatformReportRequestController::class, 'reject'])->name('report-requests.reject');
 
         Route::get('/search-types', [SearchTypeController::class, 'index'])->name('search-types.index');
         Route::get('/search-types/create', [SearchTypeController::class, 'create'])->name('search-types.create');
