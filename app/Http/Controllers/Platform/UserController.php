@@ -7,6 +7,7 @@ use App\Enums\PlatformRole;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\TenantRule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,7 +47,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', TenantRule::unique('users', 'email')],
             'password' => ['required', Password::defaults()],
             'role_id' => ['required', Rule::in($platformRoleIds)],
         ]);
@@ -88,7 +89,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'email' => ['required', 'email', 'max:255', TenantRule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', Password::defaults()],
             'role_id' => ['required', Rule::in($platformRoleIds)],
             'is_active' => ['sometimes', 'boolean'],

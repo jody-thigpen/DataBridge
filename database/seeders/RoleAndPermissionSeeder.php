@@ -8,6 +8,7 @@ use App\Enums\PlatformRole;
 use App\Enums\RoleScope;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -224,8 +225,10 @@ class RoleAndPermissionSeeder extends Seeder
             return;
         }
 
+        $tenantId = Tenant::query()->where('slug', config('tenancy.default_slug'))->value('id') ?? 1;
+
         $user = User::query()->firstOrCreate(
-            ['email' => $email],
+            ['tenant_id' => $tenantId, 'email' => $email],
             [
                 'name' => env('SUPER_ADMIN_NAME', 'Super Admin'),
                 'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'password')),

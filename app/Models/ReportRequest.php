@@ -3,13 +3,17 @@
 namespace App\Models;
 
 use App\Enums\ReportRequestStatus;
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReportRequest extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
+        'tenant_id',
         'organization_id',
         'screening_package_id',
         'requested_by_user_id',

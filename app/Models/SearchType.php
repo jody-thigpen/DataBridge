@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\SearchTypeCode;
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,7 +12,10 @@ use Illuminate\Support\Str;
 
 class SearchType extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
+        'tenant_id',
         'data_source_id',
         'name',
         'slug',

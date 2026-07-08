@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DataSource;
 use App\Models\SearchType;
 use App\Models\User;
+use App\Support\TenantRule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -44,8 +45,8 @@ class SearchTypeController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', 'unique:search_types,slug'],
-            'code' => ['required', Rule::enum(SearchTypeCode::class), 'unique:search_types,code'],
+            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', TenantRule::unique('search_types', 'slug')],
+            'code' => ['required', Rule::enum(SearchTypeCode::class), TenantRule::unique('search_types', 'code')],
             'data_source_id' => ['required', 'exists:data_sources,id'],
             'description' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -88,8 +89,8 @@ class SearchTypeController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('search_types', 'slug')->ignore($searchType->id)],
-            'code' => ['required', Rule::enum(SearchTypeCode::class), Rule::unique('search_types', 'code')->ignore($searchType->id)],
+            'slug' => ['required', 'string', 'max:255', 'alpha_dash', TenantRule::unique('search_types', 'slug')->ignore($searchType->id)],
+            'code' => ['required', Rule::enum(SearchTypeCode::class), TenantRule::unique('search_types', 'code')->ignore($searchType->id)],
             'data_source_id' => ['required', 'exists:data_sources,id'],
             'description' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\PlatformRole;
+use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\HasRoleAssignments;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,6 +16,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
+    'tenant_id',
     'name',
     'email',
     'password',
@@ -26,7 +28,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoleAssignments, Notifiable;
+    use BelongsToTenant, HasFactory, HasRoleAssignments, Notifiable;
 
     protected function casts(): array
     {

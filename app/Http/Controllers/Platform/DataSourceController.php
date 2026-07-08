@@ -7,6 +7,7 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Models\DataSource;
 use App\Models\User;
+use App\Support\TenantRule;
 use App\Services\DataSources\DataSourceManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class DataSourceController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', 'unique:data_sources,slug'],
+            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', TenantRule::unique('data_sources', 'slug')],
             'driver' => ['required', Rule::enum(DataSourceDriver::class)],
             'base_url' => ['required', 'url', 'max:255'],
             'documentation_url' => ['nullable', 'url', 'max:255'],
@@ -114,7 +115,7 @@ class DataSourceController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('data_sources', 'slug')->ignore($dataSource->id)],
+            'slug' => ['required', 'string', 'max:255', 'alpha_dash', TenantRule::unique('data_sources', 'slug')->ignore($dataSource->id)],
             'base_url' => ['required', 'url', 'max:255'],
             'documentation_url' => ['nullable', 'url', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],

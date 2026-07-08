@@ -46,6 +46,10 @@ class ImpersonationService
             abort(422, 'You cannot masquerade as yourself.');
         }
 
+        if ((int) $impersonator->tenant_id !== (int) $target->tenant_id) {
+            abort(403, 'You cannot masquerade as a user in another tenant.');
+        }
+
         if ($target->isPlatformUser() && ! $impersonator->isSuperAdmin()) {
             abort(403, 'Only a super admin can masquerade as platform staff.');
         }

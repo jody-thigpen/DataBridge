@@ -56,7 +56,14 @@ class OrganizationPackagePriceController extends Controller
             );
         }
 
-        $organization->screeningPackages()->sync($assignedPackageIds);
+        $tenantId = $organization->tenant_id
+            ?? app(\App\Services\TenantContext::class)->id()
+            ?? \App\Models\Tenant::query()->where('slug', config('tenancy.default_slug'))->value('id');
+        $sync = collect($assignedPackageIds)
+            ->mapWithKeys(fn (int $packageId) => [$packageId => ['tenant_id' => $tenantId]])
+            ->all();
+
+        $organization->screeningPackages()->sync($sync);
 
         OrganizationPackagePrice::query()
             ->where('organization_id', $organization->id)

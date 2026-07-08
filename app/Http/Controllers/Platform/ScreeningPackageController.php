@@ -8,6 +8,7 @@ use App\Models\DataSource;
 use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
+use App\Support\TenantRule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -146,6 +147,9 @@ class ScreeningPackageController extends Controller
         $screeningPackage->searchTypes()->attach($validated['search_type_id'], [
             'data_source_id' => $validated['data_source_id'],
             'sort_order' => $sortOrder,
+            'tenant_id' => $screeningPackage->tenant_id
+                ?? app(\App\Services\TenantContext::class)->id()
+                ?? \App\Models\Tenant::query()->where('slug', config('tenancy.default_slug'))->value('id'),
         ]);
 
         $searchType = SearchType::query()->findOrFail($validated['search_type_id']);
@@ -204,7 +208,7 @@ class ScreeningPackageController extends Controller
                 'string',
                 'max:255',
                 'alpha_dash',
-                Rule::unique('screening_packages', 'slug')->ignore($package?->id),
+                TenantRule::unique('screening_packages', 'slug')->ignore($package?->id),
             ],
             'description' => ['nullable', 'string', 'max:2000'],
             'base_price' => ['required', 'numeric', 'min:0'],

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
+use App\Models\Tenant;
+use App\Services\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,7 +13,10 @@ use Illuminate\Support\Str;
 
 class ScreeningPackage extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
+        'tenant_id',
         'name',
         'slug',
         'description',
@@ -101,12 +107,16 @@ class ScreeningPackage extends Model
      */
     public function syncSearchItems(array $items): void
     {
+        $tenantId = $this->tenant_id
+            ?? app(TenantContext::class)->id()
+            ?? Tenant::query()->where('slug', config('tenancy.default_slug'))->value('id');
         $sync = [];
 
         foreach ($items as $index => $item) {
             $sync[(int) $item['search_type_id']] = [
                 'data_source_id' => (int) $item['data_source_id'],
                 'sort_order' => ($index + 1) * 10,
+                'tenant_id' => $tenantId,
             ];
         }
 

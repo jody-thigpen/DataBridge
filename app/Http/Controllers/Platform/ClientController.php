@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
+use App\Support\TenantRule;
 use App\Services\OrganizationContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,11 +56,11 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', 'unique:organizations,slug'],
+            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', TenantRule::unique('organizations', 'slug')],
             'parent_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'is_active' => ['sometimes', 'boolean'],
             'admin_name' => ['required', 'string', 'max:255'],
-            'admin_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'admin_email' => ['required', 'email', 'max:255', TenantRule::unique('users', 'email')],
             'admin_password' => ['required', Password::defaults()],
             'client_manager_id' => ['nullable', Rule::in($this->clientManagerIds())],
         ]);
@@ -152,7 +153,7 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', TenantRule::unique('users', 'email')],
             'password' => ['required', Password::defaults()],
             'role_id' => ['required', Rule::in($organizationRoleIds)],
         ]);
@@ -198,7 +199,7 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'email' => ['required', 'email', 'max:255', TenantRule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', Password::defaults()],
             'role_id' => ['required', Rule::in($organizationRoleIds)],
             'is_active' => ['sometimes', 'boolean'],

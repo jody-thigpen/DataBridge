@@ -3,13 +3,17 @@
 namespace App\Models;
 
 use App\Enums\DataSourceDriver;
+use App\Models\Concerns\BelongsToTenant;
 use App\Services\DataSources\DataSourceManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class DataSource extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
+        'tenant_id',
         'name',
         'slug',
         'driver',
