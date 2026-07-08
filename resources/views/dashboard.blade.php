@@ -24,6 +24,13 @@
                             title="Platform users"
                             description="Create and manage Saffhire staff with in-house access levels."
                         />
+                        @if ($canViewReportRequestQueue)
+                            <x-action-tile
+                                href="{{ route('platform.report-requests.index', ['assigned_to_user_id' => $user->id, 'requires_review' => '1']) }}"
+                                title="Report requests"
+                                :description="$pendingReviewCount === 1 ? '1 report awaiting your review' : $pendingReviewCount . ' reports awaiting your review'"
+                            />
+                        @endif
                     </div>
                 @elseif ($organization)
                     <p class="text-sm leading-relaxed text-enterprise-600">
@@ -55,6 +62,20 @@
                 <h2 class="panel-title">Session details</h2>
             </div>
             <div class="panel-body space-y-4">
+                @if ($canViewReportRequestQueue)
+                    <div>
+                        <div class="meta-label">Awaiting your review</div>
+                        <div class="meta-value text-2xl font-semibold text-enterprise-900">{{ $pendingReviewCount }}</div>
+                        @if ($pendingReviewCount > 0)
+                            <a
+                                href="{{ route('platform.report-requests.index', ['assigned_to_user_id' => $user->id, 'requires_review' => '1']) }}"
+                                class="link-action mt-1 inline-block"
+                            >
+                                Open review queue
+                            </a>
+                        @endif
+                    </div>
+                @endif
                 <div>
                     <div class="meta-label">Signed in as</div>
                     <div class="meta-value">{{ $user->email }}</div>

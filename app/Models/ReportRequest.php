@@ -120,4 +120,18 @@ class ReportRequest extends Model
 
         return $query;
     }
+
+    public function scopeAwaitingReviewBy(Builder $query, User|int $user): Builder
+    {
+        $userId = $user instanceof User ? $user->id : $user;
+
+        return $query
+            ->where('requires_review', true)
+            ->where('assigned_to_user_id', $userId)
+            ->whereNotIn('status', [
+                ReportRequestStatus::Submitted,
+                ReportRequestStatus::Rejected,
+                ReportRequestStatus::Cancelled,
+            ]);
+    }
 }
