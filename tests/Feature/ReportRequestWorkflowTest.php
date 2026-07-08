@@ -8,6 +8,7 @@ use App\Enums\ReportRequestStatus;
 use App\Models\Organization;
 use App\Models\OrganizationSearchTypeSetting;
 use App\Models\ReportRequest;
+use App\Models\SavedReportRequestFilter;
 use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
@@ -170,6 +171,80 @@ class ReportRequestWorkflowTest extends TestCase
         $this->assertSame(ReportRequestStatus::Submitted, $reportRequest->status);
         $this->assertNotNull($reportRequest->submitted_at);
         $this->assertSame('Looks good', $reportRequest->review_notes);
+    }
+
+    public function test_platform_user_can_save_and_delete_report_request_filter_sets(): void
+    {
+        [$organization, $package, $user] = $this->clientContext();
+
+        session(['organization_id' => $organization->id]);
+        $this->actingAs($user)->post(route('reports.requests.store'), [
+            'subject_name' => 'Taylor Candidate',
+            'screening_package_id' => $package->id,
+        ]);
+
+        $operationsUser = User::factory()->create(['email_verified_at' => now()]);
+        $operationsUser->assignRole(PlatformRole::Operations);
+
+        $filterParams = [
+            'organization_id' => $organization->id,
+            'status' => ReportRequestStatus::PendingReview->value,
+            'q' => 'Taylor',
+        ];
+
+        $this->actingAs($operationsUser)
+            ->post(route('platform.report-requests.filters.store'), [
+                'name' => 'Pending Taylor requests',
+                ...$filterParams,
+            ])
+            ->assertRedirect(route('platform.report-requests.index', $filterParams))
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseHas('saved_report_request_filters', [
+            'user_id' => $operationsUser->id,
+            'name' => 'Pending Taylor requests',
+        ]);
+
+        $savedFilter = $operationsUser->savedReportRequestFilters()->firstOrFail();
+        $this->assertSame(
+            SavedReportRequestFilter::normalizeFilters($filterParams),
+            $savedFilter->filters,
+        );
+
+        $this->actingAs($operationsUser)
+            ->get(route('platform.report-requests.index', $savedFilter->filters))
+            ->assertOk()
+            ->assertSee('Taylor Candidate')
+            ->assertSee('Pending Taylor requests');
+
+        $this->actingAs($operationsUser)
+            ->delete(route('platform.report-requests.filters.destroy', $savedFilter), $filterParams)
+            ->assertRedirect(route('platform.report-requests.index', $filterParams))
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseMissing('saved_report_request_filters', [
+            'id' => $savedFilter->id,
+        ]);
+    }
+
+    public function test_user_cannot_delete_another_users_saved_filter(): void
+    {
+        $owner = User::factory()->create(['email_verified_at' => now()]);
+        $owner->assignRole(PlatformRole::Operations);
+
+        $otherUser = User::factory()->create(['email_verified_at' => now()]);
+        $otherUser->assignRole(PlatformRole::Operations);
+
+        $savedFilter = $owner->savedReportRequestFilters()->create([
+            'name' => 'My queue',
+            'filters' => ['status' => ReportRequestStatus::Assigned->value],
+        ]);
+
+        $this->actingAs($otherUser)
+            ->delete(route('platform.report-requests.filters.destroy', $savedFilter))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('saved_report_request_filters', ['id' => $savedFilter->id]);
     }
 
     /**

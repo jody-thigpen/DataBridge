@@ -59,6 +59,57 @@
                 <a href="{{ route('platform.report-requests.index') }}" class="btn-secondary">Reset</a>
             </div>
         </form>
+
+        <div class="border-t border-enterprise-200 px-4 py-4">
+            <form method="POST" action="{{ route('platform.report-requests.filters.store') }}" class="flex flex-wrap items-end gap-3">
+                @csrf
+                @foreach (\App\Models\SavedReportRequestFilter::FILTER_KEYS as $filterKey)
+                    @if (! empty($filters[$filterKey]))
+                        <input type="hidden" name="{{ $filterKey }}" value="{{ $filters[$filterKey] }}">
+                    @endif
+                @endforeach
+                <div class="min-w-[16rem] flex-1">
+                    <x-input-label for="filter_name" value="Save current filters as" />
+                    <x-text-input id="filter_name" name="name" class="mt-1 block w-full" :value="old('name')" placeholder="e.g. Pending client reviews" required />
+                    <x-input-error :messages="$errors->get('filter_name')" class="mt-2" />
+                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                </div>
+                <x-primary-button>Save filter set</x-primary-button>
+            </form>
+        </div>
+
+        @if ($savedFilters->isNotEmpty())
+            <div class="border-t border-enterprise-200 px-4 py-4">
+                <h3 class="text-sm font-semibold text-enterprise-900">Saved filter sets</h3>
+                <ul class="mt-3 space-y-2">
+                    @foreach ($savedFilters as $savedFilter)
+                        <li class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-enterprise-200 px-3 py-2">
+                            <div>
+                                <a href="{{ route('platform.report-requests.index', $savedFilter->filters) }}" class="font-medium text-brand-700 hover:text-brand-800">
+                                    {{ $savedFilter->name }}
+                                </a>
+                                <p class="text-xs text-enterprise-500">
+                                    {{ collect($savedFilter->filters)->count() }} filter{{ collect($savedFilter->filters)->count() === 1 ? '' : 's' }}
+                                </p>
+                            </div>
+                            <form
+                                method="POST"
+                                action="{{ route('platform.report-requests.filters.destroy', $savedFilter) }}"
+                                class="inline"
+                                onsubmit="return confirm('Delete saved filter \"{{ $savedFilter->name }}\"?');"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                @foreach ($filters as $filterKey => $filterValue)
+                                    <input type="hidden" name="{{ $filterKey }}" value="{{ $filterValue }}">
+                                @endforeach
+                                <button type="submit" class="link-action text-red-700">Delete</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
     </div>
 
     <div class="panel">

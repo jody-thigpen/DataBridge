@@ -45,6 +45,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/clients/{organization}/client-manager', [ClientController::class, 'updateClientManager'])->name('clients.client-manager.update');
 
         Route::get('/report-requests', [PlatformReportRequestController::class, 'index'])->name('report-requests.index');
+        Route::post('/report-requests/filters', [PlatformReportRequestController::class, 'storeFilter'])->name('report-requests.filters.store');
+        Route::delete('/report-requests/filters/{savedReportRequestFilter}', [PlatformReportRequestController::class, 'destroyFilter'])->name('report-requests.filters.destroy');
         Route::get('/report-requests/{reportRequest}', [PlatformReportRequestController::class, 'show'])->name('report-requests.show');
         Route::patch('/report-requests/{reportRequest}/assign', [PlatformReportRequestController::class, 'assign'])->name('report-requests.assign');
         Route::patch('/report-requests/{reportRequest}/approve', [PlatformReportRequestController::class, 'approve'])->name('report-requests.approve');

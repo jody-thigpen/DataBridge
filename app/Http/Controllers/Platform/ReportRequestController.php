@@ -7,6 +7,7 @@ use App\Enums\ReportRequestStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\ReportRequest;
+use App\Models\SavedReportRequestFilter;
 use App\Models\User;
 use App\Services\SearchReviewPolicy;
 use Illuminate\Http\RedirectResponse;
@@ -20,15 +21,7 @@ class ReportRequestController extends Controller
     {
         abort_unless($this->canView($request->user()), 403);
 
-        $filters = $request->only([
-            'organization_id',
-            'status',
-            'assigned_to_user_id',
-            'requires_review',
-            'date_from',
-            'date_to',
-            'q',
-        ]);
+        $filters = $this->resolveFilters($request);
 
         $reportRequests = ReportRequest::query()
             ->with(['organization', 'screeningPackage', 'requestedBy', 'assignedTo'])
@@ -43,8 +36,60 @@ class ReportRequestController extends Controller
             'organizations' => Organization::query()->orderBy('name')->get(),
             'statuses' => ReportRequestStatus::cases(),
             'assignees' => $this->platformAssignees(),
+            'savedFilters' => $request->user()
+                ->savedReportRequestFilters()
+                ->orderBy('name')
+                ->get(),
             'canManage' => $this->canManage($request->user()),
         ]);
+    }
+
+    public function storeFilter(Request $request): RedirectResponse
+    {
+        abort_unless($this->canView($request->user()), 403);
+
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('saved_report_request_filters', 'name')->where('user_id', $user->id),
+            ],
+        ]);
+
+        $filters = SavedReportRequestFilter::normalizeFilters(
+            $request->only(SavedReportRequestFilter::FILTER_KEYS),
+        );
+
+        if ($filters === []) {
+            return redirect()
+                ->route('platform.report-requests.index')
+                ->withErrors(['filter_name' => 'Apply at least one filter before saving a filter set.']);
+        }
+
+        $user->savedReportRequestFilters()->create([
+            'name' => $validated['name'],
+            'filters' => $filters,
+        ]);
+
+        return redirect()
+            ->route('platform.report-requests.index', $filters)
+            ->with('status', "Filter \"{$validated['name']}\" saved.");
+    }
+
+    public function destroyFilter(Request $request, SavedReportRequestFilter $savedReportRequestFilter): RedirectResponse
+    {
+        abort_unless($this->canView($request->user()), 403);
+        abort_unless($savedReportRequestFilter->user_id === $request->user()->id, 403);
+
+        $name = $savedReportRequestFilter->name;
+        $savedReportRequestFilter->delete();
+
+        return redirect()
+            ->route('platform.report-requests.index', $this->resolveFilters($request))
+            ->with('status', "Filter \"{$name}\" deleted.");
     }
 
     public function show(Request $request, ReportRequest $reportRequest, SearchReviewPolicy $searchReviewPolicy): View
@@ -142,5 +187,15 @@ class ReportRequestController extends Controller
             ->whereHas('roleAssignments', fn ($query) => $query->whereNull('organization_id'))
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function resolveFilters(Request $request): array
+    {
+        return SavedReportRequestFilter::normalizeFilters(
+            $request->only(SavedReportRequestFilter::FILTER_KEYS),
+        );
     }
 }
