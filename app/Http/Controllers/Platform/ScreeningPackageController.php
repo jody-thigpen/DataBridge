@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
+use App\Models\DataSource;
 use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
@@ -84,25 +85,25 @@ class ScreeningPackageController extends Controller
 
         $screeningPackage->load(['searchTypes.dataSource']);
 
+        $dataSources = DataSource::query()->orderBy('name')->get();
+        $dataSourcesById = $dataSources->pluck('name', 'id');
         $packageSearchTypeIds = $screeningPackage->searchTypes->pluck('id');
 
-        $searchTypesQuery = SearchType::query()
+        $availableSearchTypes = SearchType::query()
             ->with('dataSource')
-            ->orderBy('sort_order');
-
-        if ($packageSearchTypeIds->isNotEmpty()) {
-            $searchTypesQuery->where(function ($query) use ($packageSearchTypeIds): void {
-                $query->where('is_active', true)
-                    ->orWhereIn('id', $packageSearchTypeIds);
-            });
-        } else {
-            $searchTypesQuery->where('is_active', true);
-        }
+            ->where('is_active', true)
+            ->when(
+                $packageSearchTypeIds->isNotEmpty(),
+                fn ($query) => $query->whereNotIn('id', $packageSearchTypeIds),
+            )
+            ->orderBy('sort_order')
+            ->get();
 
         return view('platform.packages.edit', [
             'package' => $screeningPackage,
-            'searchTypes' => $searchTypesQuery->get(),
-            'formItems' => $this->formItemsFromPackage($screeningPackage),
+            'dataSources' => $dataSources,
+            'dataSourcesById' => $dataSourcesById,
+            'availableSearchTypes' => $availableSearchTypes,
         ]);
     }
 
@@ -110,7 +111,7 @@ class ScreeningPackageController extends Controller
     {
         abort_unless($this->canManageCatalog($request->user()), 403);
 
-        $validated = $this->validatePackage($request, $screeningPackage);
+        $validated = $this->validatePackageDetails($request, $screeningPackage);
 
         $screeningPackage->update([
             'name' => $validated['name'],
@@ -120,17 +121,81 @@ class ScreeningPackageController extends Controller
             'is_active' => $validated['is_active'] ?? false,
         ]);
 
-        $screeningPackage->syncSearchItems($validated['items']);
+        return redirect()
+            ->route('platform.packages.edit', $screeningPackage)
+            ->with('status', "{$screeningPackage->name} updated.");
+    }
+
+    public function storeSearchItem(Request $request, ScreeningPackage $screeningPackage): RedirectResponse
+    {
+        abort_unless($this->canManageCatalog($request->user()), 403);
+
+        $attachedSearchTypeIds = $screeningPackage->searchTypes()->pluck('search_types.id');
+
+        $validated = $request->validate([
+            'search_type_id' => [
+                'required',
+                'exists:search_types,id',
+                Rule::notIn($attachedSearchTypeIds),
+            ],
+            'data_source_id' => ['required', 'exists:data_sources,id'],
+        ]);
+
+        $sortOrder = ($screeningPackage->searchTypes()->count() + 1) * 10;
+
+        $screeningPackage->searchTypes()->attach($validated['search_type_id'], [
+            'data_source_id' => $validated['data_source_id'],
+            'sort_order' => $sortOrder,
+        ]);
+
+        $searchType = SearchType::query()->findOrFail($validated['search_type_id']);
 
         return redirect()
-            ->route('platform.packages.show', $screeningPackage)
-            ->with('status', "{$screeningPackage->name} updated.");
+            ->route('platform.packages.edit', $screeningPackage)
+            ->with('status', "{$searchType->name} added to {$screeningPackage->name}.");
+    }
+
+    public function destroySearchItem(Request $request, ScreeningPackage $screeningPackage, SearchType $searchType): RedirectResponse
+    {
+        abort_unless($this->canManageCatalog($request->user()), 403);
+
+        abort_unless(
+            $screeningPackage->searchTypes()->where('search_types.id', $searchType->id)->exists(),
+            404,
+        );
+
+        if ($screeningPackage->searchTypes()->count() <= 1) {
+            return redirect()
+                ->route('platform.packages.edit', $screeningPackage)
+                ->withErrors(['search' => 'A package must include at least one search.']);
+        }
+
+        $screeningPackage->searchTypes()->detach($searchType->id);
+
+        return redirect()
+            ->route('platform.packages.edit', $screeningPackage)
+            ->with('status', "{$searchType->name} removed from {$screeningPackage->name}.");
     }
 
     /**
      * @return array<string, mixed>
      */
     private function validatePackage(Request $request, ?ScreeningPackage $package = null): array
+    {
+        return array_merge(
+            $this->validatePackageDetails($request, $package),
+            $request->validate([
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.search_type_id' => ['required', 'distinct', 'exists:search_types,id'],
+                'items.*.data_source_id' => ['required', 'exists:data_sources,id'],
+            ]),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatePackageDetails(Request $request, ?ScreeningPackage $package = null): array
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -144,9 +209,6 @@ class ScreeningPackageController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'base_price' => ['required', 'numeric', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.search_type_id' => ['required', 'distinct', 'exists:search_types,id'],
-            'items.*.data_source_id' => ['required', 'exists:data_sources,id'],
         ]);
     }
 
@@ -156,19 +218,6 @@ class ScreeningPackageController extends Controller
     private function defaultFormItems(): array
     {
         return [['search_type_id' => '', 'data_source_id' => '']];
-    }
-
-    /**
-     * @return list<array{search_type_id: int, data_source_id: int}>
-     */
-    private function formItemsFromPackage(ScreeningPackage $package): array
-    {
-        $items = $package->searchTypes->map(fn (SearchType $searchType) => [
-            'search_type_id' => $searchType->id,
-            'data_source_id' => $searchType->pivot->data_source_id,
-        ])->all();
-
-        return $items !== [] ? $items : $this->defaultFormItems();
     }
 
     private function canManageCatalog(?User $user): bool

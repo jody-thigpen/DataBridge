@@ -62,6 +62,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/packages/{screeningPackage}', [ScreeningPackageController::class, 'show'])->name('packages.show');
         Route::get('/packages/{screeningPackage}/edit', [ScreeningPackageController::class, 'edit'])->name('packages.edit');
         Route::patch('/packages/{screeningPackage}', [ScreeningPackageController::class, 'update'])->name('packages.update');
+        Route::post('/packages/{screeningPackage}/searches', [ScreeningPackageController::class, 'storeSearchItem'])->name('packages.searches.store');
+        Route::delete('/packages/{screeningPackage}/searches/{searchType}', [ScreeningPackageController::class, 'destroySearchItem'])->name('packages.searches.destroy');
 
         Route::get('/data-sources', [DataSourceController::class, 'index'])->name('data-sources.index');
         Route::get('/data-sources/create', [DataSourceController::class, 'create'])->name('data-sources.create');

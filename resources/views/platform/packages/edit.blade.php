@@ -7,11 +7,11 @@
         </x-page-header>
     </x-slot>
 
-    <form method="POST" action="{{ route('platform.packages.update', $package) }}" class="grid gap-5 lg:grid-cols-2">
-        @csrf
-        @method('PATCH')
+    <div class="grid gap-5 lg:grid-cols-2">
+        <form method="POST" action="{{ route('platform.packages.update', $package) }}" class="panel">
+            @csrf
+            @method('PATCH')
 
-        <div class="panel">
             <div class="panel-header"><h2 class="panel-title">Package details</h2></div>
             <div class="panel-body space-y-4">
                 <div>
@@ -35,18 +35,20 @@
                     <input id="is_active" name="is_active" type="checkbox" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_active', $package->is_active))>
                     <x-input-label for="is_active" value="Active" class="mb-0" />
                 </div>
+                <x-primary-button>Save package details</x-primary-button>
             </div>
-        </div>
+        </form>
 
         <div class="panel">
             <div class="panel-header"><h2 class="panel-title">Included searches</h2></div>
             <div class="panel-body">
-                @include('platform.packages.partials.items-form', ['searchTypes' => $searchTypes, 'formItems' => $formItems])
+                @include('platform.packages.partials.attached-searches', [
+                    'package' => $package,
+                    'dataSources' => $dataSources,
+                    'dataSourcesById' => $dataSourcesById,
+                    'availableSearchTypes' => $availableSearchTypes,
+                ])
             </div>
         </div>
-
-        <div class="lg:col-span-2">
-            <x-primary-button>Save changes</x-primary-button>
-        </div>
-    </form>
+    </div>
 </x-app-layout>
