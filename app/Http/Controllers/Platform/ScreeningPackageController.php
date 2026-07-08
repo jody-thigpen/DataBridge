@@ -84,9 +84,24 @@ class ScreeningPackageController extends Controller
 
         $screeningPackage->load(['searchTypes.dataSource']);
 
+        $packageSearchTypeIds = $screeningPackage->searchTypes->pluck('id');
+
+        $searchTypesQuery = SearchType::query()
+            ->with('dataSource')
+            ->orderBy('sort_order');
+
+        if ($packageSearchTypeIds->isNotEmpty()) {
+            $searchTypesQuery->where(function ($query) use ($packageSearchTypeIds): void {
+                $query->where('is_active', true)
+                    ->orWhereIn('id', $packageSearchTypeIds);
+            });
+        } else {
+            $searchTypesQuery->where('is_active', true);
+        }
+
         return view('platform.packages.edit', [
             'package' => $screeningPackage,
-            'searchTypes' => SearchType::query()->with('dataSource')->where('is_active', true)->orderBy('sort_order')->get(),
+            'searchTypes' => $searchTypesQuery->get(),
             'formItems' => $this->formItemsFromPackage($screeningPackage),
         ]);
     }

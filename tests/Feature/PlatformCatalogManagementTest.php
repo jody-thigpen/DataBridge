@@ -66,6 +66,33 @@ class PlatformCatalogManagementTest extends TestCase
         $this->assertCount(2, $package->searchTypes);
     }
 
+    public function test_package_edit_page_preselects_existing_search_types(): void
+    {
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $county = SearchType::query()->where('code', SearchTypeCode::CountyCriminal->value)->firstOrFail();
+        $national = SearchType::query()->where('code', SearchTypeCode::NationalCriminal->value)->firstOrFail();
+        $dataSource = DataSource::query()->firstOrFail();
+
+        $package = ScreeningPackage::query()->create([
+            'name' => 'Standard Criminal Package',
+            'slug' => 'standard-criminal-package',
+            'base_price' => '49.95',
+        ]);
+        $package->syncSearchItems([
+            ['search_type_id' => $county->id, 'data_source_id' => $dataSource->id],
+            ['search_type_id' => $national->id, 'data_source_id' => $dataSource->id],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('platform.packages.edit', $package))
+            ->assertOk()
+            ->assertSee($county->name, false)
+            ->assertSee($national->name, false)
+            ->assertSee('search_type_id', false);
+    }
+
     public function test_platform_admin_can_assign_package_to_client_with_price_override(): void
     {
         $admin = User::factory()->create(['email_verified_at' => now()]);

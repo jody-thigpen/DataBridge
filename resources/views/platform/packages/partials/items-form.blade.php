@@ -14,11 +14,11 @@
     items: @js($normalizedFormItems),
     nextKey: @js($nextItemKey),
     searchTypes: @js($searchTypes->map(fn ($type) => [
-        'id' => $type->id,
+        'id' => (string) $type->id,
         'name' => $type->name,
-        'default_data_source_id' => $type->data_source_id,
+        'default_data_source_id' => $type->data_source_id !== null ? (string) $type->data_source_id : '',
     ])),
-    dataSources: @js($dataSources->map(fn ($source) => ['id' => $source->id, 'name' => $source->name])),
+    dataSources: @js($dataSources->map(fn ($source) => ['id' => (string) $source->id, 'name' => $source->name])),
     addItem() {
         const firstType = this.searchTypes[0] ?? null;
         this.items.push({
