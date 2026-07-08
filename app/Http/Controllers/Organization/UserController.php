@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Organization;
 use App\Enums\OrganizationRole;
 use App\Enums\Permission;
 use App\Http\Controllers\Controller;
+use App\Models\Organization;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\OrganizationContext;
@@ -82,5 +83,71 @@ class UserController extends Controller
         $newUser->assignRole($role, $organization);
 
         return back()->with('status', "{$newUser->name} added to {$organization->name}.");
+    }
+
+    public function edit(Request $request, User $user, OrganizationContext $organizationContext): View
+    {
+        $organization = $organizationContext->current();
+
+        abort_unless($request->user()?->hasPermission(Permission::OrgUsersManage, $organization), 403);
+        $this->ensureOrganizationMember($user, $organization);
+
+        $organizationRoles = Role::query()
+            ->where('scope', 'organization')
+            ->with('permissions')
+            ->orderBy('sort_order')
+            ->get();
+
+        $currentRoleId = $user->roleAssignments()
+            ->where('organization_id', $organization->id)
+            ->value('role_id');
+
+        return view('organization.users.edit', compact('organization', 'user', 'organizationRoles', 'currentRoleId'));
+    }
+
+    public function update(Request $request, User $user, OrganizationContext $organizationContext): RedirectResponse
+    {
+        $organization = $organizationContext->current();
+
+        abort_unless($request->user()?->hasPermission(Permission::OrgUsersManage, $organization), 403);
+        $this->ensureOrganizationMember($user, $organization);
+
+        $organizationRoleIds = Role::query()->where('scope', 'organization')->pluck('id');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', Password::defaults()],
+            'role_id' => ['required', Rule::in($organizationRoleIds)],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
+
+        $role = Role::query()->findOrFail($validated['role_id']);
+        $user->syncOrganizationRole($role, $organization);
+
+        return redirect()
+            ->route('organization.users.index')
+            ->with('status', "{$user->name} updated.");
+    }
+
+    private function ensureOrganizationMember(User $user, Organization $organization): void
+    {
+        abort_unless($user->belongsToOrganization($organization), 404);
     }
 }

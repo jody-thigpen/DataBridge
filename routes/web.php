@@ -37,6 +37,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
         Route::get('/clients/{organization}', [ClientController::class, 'show'])->name('clients.show');
         Route::post('/clients/{organization}/users', [ClientController::class, 'storeUser'])->name('clients.users.store');
+        Route::get('/clients/{organization}/users/{user}/edit', [ClientController::class, 'editUser'])->name('clients.users.edit');
+        Route::patch('/clients/{organization}/users/{user}', [ClientController::class, 'updateUser'])->name('clients.users.update');
         Route::post('/clients/{organization}/enter', [ClientController::class, 'enter'])->name('clients.enter');
         Route::patch('/clients/{organization}/package-prices', [OrganizationPackagePriceController::class, 'update'])->name('clients.package-prices.update');
         Route::patch('/clients/{organization}/search-review-settings', [OrganizationSearchTypeSettingController::class, 'update'])->name('clients.search-review-settings.update');
@@ -71,6 +73,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');
         Route::post('/users', [PlatformUserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}/edit', [PlatformUserController::class, 'edit'])->name('users.edit');
+        Route::patch('/users/{user}', [PlatformUserController::class, 'update'])->name('users.update');
 
         Route::post('/impersonation/{user}', [ImpersonationController::class, 'store'])->name('impersonation.store');
     });
@@ -89,6 +93,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/organization/users', [OrganizationUserController::class, 'index'])->name('organization.users.index');
         Route::post('/organization/users', [OrganizationUserController::class, 'store'])->name('organization.users.store');
+        Route::get('/organization/users/{user}/edit', [OrganizationUserController::class, 'edit'])->name('organization.users.edit');
+        Route::patch('/organization/users/{user}', [OrganizationUserController::class, 'update'])->name('organization.users.update');
     });
 });
 

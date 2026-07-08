@@ -63,4 +63,88 @@ class UserController extends Controller
 
         return back()->with('status', "{$user->name} added as platform user.");
     }
+
+    public function edit(Request $request, User $user): View
+    {
+        $this->ensurePlatformUser($user);
+        abort_unless($request->user()?->hasPermission(Permission::PlatformUsersManage), 403);
+        $this->ensureCanManageTargetUser($request, $user);
+
+        $platformRoles = $this->assignablePlatformRoles($user);
+        $currentRoleId = $user->roleAssignments()
+            ->whereNull('organization_id')
+            ->value('role_id');
+
+        return view('platform.users.edit', compact('user', 'platformRoles', 'currentRoleId'));
+    }
+
+    public function update(Request $request, User $user): RedirectResponse
+    {
+        $this->ensurePlatformUser($user);
+        abort_unless($request->user()?->hasPermission(Permission::PlatformUsersManage), 403);
+        $this->ensureCanManageTargetUser($request, $user);
+
+        $platformRoleIds = $this->assignablePlatformRoles($user)->pluck('id');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', Password::defaults()],
+            'role_id' => ['required', Rule::in($platformRoleIds)],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
+
+        if (! $user->isSuperAdmin()) {
+            $role = Role::query()->findOrFail($validated['role_id']);
+            $user->syncPlatformRole($role);
+        }
+
+        return redirect()
+            ->route('platform.users.index')
+            ->with('status', "{$user->name} updated.");
+    }
+
+    private function ensurePlatformUser(User $user): void
+    {
+        abort_unless($user->isPlatformUser(), 404);
+    }
+
+    private function ensureCanManageTargetUser(Request $request, User $target): void
+    {
+        if ($target->isSuperAdmin() && ! $request->user()?->isSuperAdmin()) {
+            abort(403);
+        }
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, Role>
+     */
+    private function assignablePlatformRoles(User $user)
+    {
+        return Role::query()
+            ->where('scope', 'platform')
+            ->when(
+                ! $user->isSuperAdmin(),
+                fn ($query) => $query->where('slug', '!=', PlatformRole::SuperAdmin->value),
+            )
+            ->with('permissions')
+            ->orderBy('sort_order')
+            ->get();
+    }
 }

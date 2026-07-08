@@ -18,6 +18,9 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            @if ($canManageUsers)
+                                <th class="text-right">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -26,10 +29,15 @@
                                 <td class="font-medium text-enterprise-900">{{ $user->name }}</td>
                                 <td class="text-enterprise-600">{{ $user->email }}</td>
                                 <td class="text-enterprise-600">{{ $user->roleAssignments->first()?->role->name }}</td>
+                                @if ($canManageUsers)
+                                    <td class="text-right">
+                                        <a href="{{ route('organization.users.edit', $user) }}" class="link-action">Edit</a>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="py-10 text-center text-enterprise-500">No team members on record.</td>
+                                <td colspan="{{ $canManageUsers ? 4 : 3 }}" class="py-10 text-center text-enterprise-500">No team members on record.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -18,6 +18,9 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Assigned roles</th>
+                            @if ($canManageUsers)
+                                <th class="text-right">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -26,10 +29,17 @@
                                 <td class="font-medium text-enterprise-900">{{ $user->name }}</td>
                                 <td class="text-enterprise-600">{{ $user->email }}</td>
                                 <td class="text-enterprise-600">{{ $user->roleAssignments->pluck('role.name')->join(', ') }}</td>
+                                @if ($canManageUsers)
+                                    <td class="text-right">
+                                        @unless ($user->isSuperAdmin() && ! auth()->user()?->isSuperAdmin())
+                                            <a href="{{ route('platform.users.edit', $user) }}" class="link-action">Edit</a>
+                                        @endunless
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="py-10 text-center text-enterprise-500">No platform users on record.</td>
+                                <td colspan="{{ $canManageUsers ? 4 : 3 }}" class="py-10 text-center text-enterprise-500">No platform users on record.</td>
                             </tr>
                         @endforelse
                     </tbody>

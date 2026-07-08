@@ -171,6 +171,63 @@ class ClientController extends Controller
         return back()->with('status', "{$newUser->name} added to {$organization->name}.");
     }
 
+    public function editUser(Request $request, Organization $organization, User $user): View
+    {
+        abort_unless($this->canManageClients($request->user()), 403);
+        abort_unless($user->belongsToOrganization($organization), 404);
+
+        $organizationRoles = Role::query()
+            ->where('scope', 'organization')
+            ->with('permissions')
+            ->orderBy('sort_order')
+            ->get();
+
+        $currentRoleId = $user->roleAssignments()
+            ->where('organization_id', $organization->id)
+            ->value('role_id');
+
+        return view('platform.clients.users.edit', compact('organization', 'user', 'organizationRoles', 'currentRoleId'));
+    }
+
+    public function updateUser(Request $request, Organization $organization, User $user): RedirectResponse
+    {
+        abort_unless($this->canManageClients($request->user()), 403);
+        abort_unless($user->belongsToOrganization($organization), 404);
+
+        $organizationRoleIds = Role::query()->where('scope', 'organization')->pluck('id');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', Password::defaults()],
+            'role_id' => ['required', Rule::in($organizationRoleIds)],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
+
+        $role = Role::query()->findOrFail($validated['role_id']);
+        $user->syncOrganizationRole($role, $organization);
+
+        return redirect()
+            ->route('platform.clients.show', $organization)
+            ->with('status', "{$user->name} updated.");
+    }
+
     public function enter(Organization $organization, OrganizationContext $organizationContext): RedirectResponse
     {
         $organizationContext->set($organization);

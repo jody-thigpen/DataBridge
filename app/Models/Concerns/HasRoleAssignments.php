@@ -137,6 +137,26 @@ trait HasRoleAssignments
             ->delete();
     }
 
+    public function syncPlatformRole(Role $role): void
+    {
+        if (! $role->isPlatform()) {
+            throw new \InvalidArgumentException('Role must be a platform role.');
+        }
+
+        $this->roleAssignments()->whereNull('organization_id')->delete();
+        $this->assignRole($role);
+    }
+
+    public function syncOrganizationRole(Role $role, Organization $organization): void
+    {
+        if (! $role->isOrganization()) {
+            throw new \InvalidArgumentException('Role must be an organization role.');
+        }
+
+        $this->roleAssignments()->where('organization_id', $organization->id)->delete();
+        $this->assignRole($role, $organization);
+    }
+
     public function accessibleOrganizations(): Collection
     {
         return $this->organizations()

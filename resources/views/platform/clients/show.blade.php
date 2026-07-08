@@ -70,7 +70,10 @@
                                 <td class="font-medium text-enterprise-900">{{ $assignment->user->name }}</td>
                                 <td class="text-enterprise-600">{{ $assignment->user->email }}</td>
                                 <td class="text-enterprise-600">{{ $assignment->role->name }}</td>
-                                <td class="text-right">
+                                <td class="text-right space-x-3">
+                                    @if ($canManageClients)
+                                        <a href="{{ route('platform.clients.users.edit', [$organization, $assignment->user]) }}" class="link-action">Edit</a>
+                                    @endif
                                     <form method="POST" action="{{ route('platform.impersonation.store', $assignment->user) }}" class="inline">
                                         @csrf
                                         <button type="submit" class="link-action">Start support session</button>
