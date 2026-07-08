@@ -15,6 +15,7 @@ class Organization extends Model
         'name',
         'slug',
         'is_active',
+        'client_manager_id',
     ];
 
     protected function casts(): array
@@ -36,6 +37,11 @@ class Organization extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function clientManager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'client_manager_id');
     }
 
     public function children(): HasMany

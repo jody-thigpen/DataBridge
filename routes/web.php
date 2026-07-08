@@ -40,6 +40,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/clients/{organization}/enter', [ClientController::class, 'enter'])->name('clients.enter');
         Route::patch('/clients/{organization}/package-prices', [OrganizationPackagePriceController::class, 'update'])->name('clients.package-prices.update');
         Route::patch('/clients/{organization}/search-review-settings', [OrganizationSearchTypeSettingController::class, 'update'])->name('clients.search-review-settings.update');
+        Route::patch('/clients/{organization}/client-manager', [ClientController::class, 'updateClientManager'])->name('clients.client-manager.update');
 
         Route::get('/report-requests', [PlatformReportRequestController::class, 'index'])->name('report-requests.index');
         Route::get('/report-requests/{reportRequest}', [PlatformReportRequestController::class, 'show'])->name('report-requests.show');

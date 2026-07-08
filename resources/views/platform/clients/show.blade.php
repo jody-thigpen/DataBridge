@@ -33,6 +33,10 @@
                         </span>
                     </div>
                 </div>
+                <div>
+                    <div class="meta-label">Client manager</div>
+                    <div class="meta-value">{{ $organization->clientManager?->name ?? 'None assigned' }}</div>
+                </div>
                 @if ($organization->children->isNotEmpty())
                     <div>
                         <div class="meta-label">Subsidiaries</div>
@@ -122,6 +126,34 @@
             </div>
         @endif
     </div>
+
+    @if ($canManageClients)
+        <div class="panel mt-5">
+            <div class="panel-header">
+                <h2 class="panel-title">Client manager</h2>
+            </div>
+            <form method="POST" action="{{ route('platform.clients.client-manager.update', $organization) }}" class="panel-body space-y-4">
+                @csrf
+                @method('PATCH')
+                <p class="text-sm text-enterprise-600">
+                    Assign a Saffhire client manager to this organization. New report requests requiring review are automatically assigned to this person, but individual requests can still be reassigned.
+                </p>
+                <div>
+                    <x-input-label for="client_manager_id" value="Client manager" />
+                    <select id="client_manager_id" name="client_manager_id" class="mt-1 block w-full max-w-md">
+                        <option value="">No client manager assigned</option>
+                        @foreach ($clientManagers as $manager)
+                            <option value="{{ $manager->id }}" @selected(old('client_manager_id', $organization->client_manager_id) == $manager->id)>
+                                {{ $manager->name }} ({{ $manager->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('client_manager_id')" class="mt-2" />
+                </div>
+                <x-primary-button>Save client manager</x-primary-button>
+            </form>
+        </div>
+    @endif
 
     @if ($canManageCatalog ? $allPackages->isNotEmpty() : $assignedPackages->isNotEmpty())
         <div class="panel mt-5">

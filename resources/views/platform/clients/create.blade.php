@@ -44,6 +44,17 @@
                     <input id="is_active" name="is_active" type="checkbox" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_active', true))>
                     <x-input-label for="is_active" value="Organization is active" class="mb-0" />
                 </div>
+                <div>
+                    <x-input-label for="client_manager_id" value="Assigned client manager" />
+                    <select id="client_manager_id" name="client_manager_id" class="mt-1 block w-full">
+                        <option value="">No client manager assigned</option>
+                        @foreach ($clientManagers as $manager)
+                            <option value="{{ $manager->id }}" @selected(old('client_manager_id') == $manager->id)>{{ $manager->name }} ({{ $manager->email }})</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-enterprise-500">Report requests requiring review will be automatically assigned to this manager.</p>
+                    <x-input-error :messages="$errors->get('client_manager_id')" class="mt-2" />
+                </div>
             </div>
         </div>
 

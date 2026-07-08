@@ -105,6 +105,15 @@ class RoleAndPermissionSeeder extends Seeder
                     PermissionEnum::PlatformAuditView->value,
                 ],
             ],
+            PlatformRole::ClientManager->value => [
+                'name' => 'Client Manager',
+                'description' => 'Manage assigned clients and review their report requests',
+                'sort_order' => 35,
+                'permissions' => [
+                    PermissionEnum::PlatformReportRequestsView->value,
+                    PermissionEnum::PlatformReportRequestsManage->value,
+                ],
+            ],
             PlatformRole::Support->value => [
                 'name' => 'Support',
                 'description' => 'Client support access',

@@ -49,15 +49,29 @@ class ReportRequestController extends Controller
         $package = ScreeningPackage::query()->findOrFail($validated['screening_package_id']);
         $requiresReview = $searchReviewPolicy->packageRequiresReview($package, $organization);
 
-        $reportRequest = ReportRequest::query()->create([
+        $organization->loadMissing('clientManager');
+
+        $assignedToUserId = null;
+        $assignedAt = null;
+        $status = $requiresReview ? ReportRequestStatus::PendingReview : ReportRequestStatus::Submitted;
+
+        if ($requiresReview && $organization->client_manager_id !== null) {
+            $assignedToUserId = $organization->client_manager_id;
+            $assignedAt = now();
+            $status = ReportRequestStatus::Assigned;
+        }
+
+        ReportRequest::query()->create([
             'organization_id' => $organization->id,
             'screening_package_id' => $package->id,
             'requested_by_user_id' => $request->user()->id,
+            'assigned_to_user_id' => $assignedToUserId,
             'subject_name' => $validated['subject_name'],
             'notes' => $validated['notes'] ?? null,
             'price' => $package->priceForOrganization($organization),
             'requires_review' => $requiresReview,
-            'status' => $requiresReview ? ReportRequestStatus::PendingReview : ReportRequestStatus::Submitted,
+            'status' => $status,
+            'assigned_at' => $assignedAt,
             'submitted_at' => $requiresReview ? null : now(),
         ]);
 

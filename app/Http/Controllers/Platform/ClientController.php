@@ -44,7 +44,9 @@ class ClientController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('platform.clients.create', compact('parentOrganizations'));
+        $clientManagers = User::query()->clientManagers()->get();
+
+        return view('platform.clients.create', compact('parentOrganizations', 'clientManagers'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -59,6 +61,7 @@ class ClientController extends Controller
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'admin_password' => ['required', Password::defaults()],
+            'client_manager_id' => ['nullable', Rule::in($this->clientManagerIds())],
         ]);
 
         $organization = DB::transaction(function () use ($validated): Organization {
@@ -67,6 +70,7 @@ class ClientController extends Controller
                 'slug' => $validated['slug'] ?? null,
                 'parent_id' => $validated['parent_id'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
+                'client_manager_id' => $validated['client_manager_id'] ?? null,
             ]);
 
             $admin = User::query()->create([
@@ -89,7 +93,7 @@ class ClientController extends Controller
 
     public function show(Request $request, Organization $organization): View
     {
-        $organization->load(['parent', 'children', 'roleAssignments.user', 'roleAssignments.role']);
+        $organization->load(['parent', 'children', 'clientManager', 'roleAssignments.user', 'roleAssignments.role']);
 
         $canManageClients = $this->canManageClients($request->user());
 
@@ -124,6 +128,8 @@ class ClientController extends Controller
             ->get()
             ->keyBy('search_type_id');
 
+        $clientManagers = User::query()->clientManagers()->get();
+
         return view('platform.clients.show', compact(
             'organization',
             'canManageClients',
@@ -134,6 +140,7 @@ class ClientController extends Controller
             'assignedPackages',
             'searchTypes',
             'searchTypeSettings',
+            'clientManagers',
         ));
     }
 
@@ -169,6 +176,29 @@ class ClientController extends Controller
         $organizationContext->set($organization);
 
         return redirect()->route('dashboard')->with('status', "Now viewing {$organization->name}.");
+    }
+
+    public function updateClientManager(Request $request, Organization $organization): RedirectResponse
+    {
+        abort_unless($this->canManageClients($request->user()), 403);
+
+        $validated = $request->validate([
+            'client_manager_id' => ['nullable', Rule::in($this->clientManagerIds())],
+        ]);
+
+        $organization->update([
+            'client_manager_id' => $validated['client_manager_id'] ?? null,
+        ]);
+
+        return back()->with('status', 'Client manager updated.');
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function clientManagerIds(): array
+    {
+        return User::query()->clientManagers()->pluck('id')->all();
     }
 
     private function canManageClients(?User $user): bool

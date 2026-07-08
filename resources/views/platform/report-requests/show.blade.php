@@ -91,7 +91,7 @@
                     @csrf
                     @method('PATCH')
                     <div>
-                        <x-input-label for="assigned_to_user_id" value="Saffhire employee" />
+                        <x-input-label for="assigned_to_user_id" value="Assigned reviewer" />
                         <select id="assigned_to_user_id" name="assigned_to_user_id" class="mt-1 block w-full" required>
                             <option value="">Select reviewer</option>
                             @foreach ($assignees as $assignee)
