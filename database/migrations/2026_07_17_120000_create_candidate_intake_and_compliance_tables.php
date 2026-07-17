@@ -22,8 +22,8 @@ return new class extends Migration
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
 
-            $table->unique(['organization_id', 'field_key']);
-            $table->index(['organization_id', 'is_active', 'sort_order']);
+            $table->unique(['organization_id', 'field_key'], 'cfq_org_field_key_unique');
+            $table->index(['organization_id', 'is_active', 'sort_order'], 'cfq_org_active_sort_idx');
         });
 
         Schema::create('compliance_documents', function (Blueprint $table) {
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->foreignId('uploaded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->index(['organization_id', 'is_active', 'sort_order']);
+            $table->index(['organization_id', 'is_active', 'sort_order'], 'cd_org_active_sort_idx');
         });
 
         Schema::table('report_requests', function (Blueprint $table) {
