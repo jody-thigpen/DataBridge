@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use App\Enums\ReportRequestStatus;
+use App\Enums\ReportOrderStatus;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ReportRequest extends Model
+class ReportOrder extends Model
 {
     use BelongsToTenant;
 
@@ -16,7 +16,7 @@ class ReportRequest extends Model
         'tenant_id',
         'organization_id',
         'screening_package_id',
-        'requested_by_user_id',
+        'ordered_by_user_id',
         'assigned_to_user_id',
         'reviewed_by_user_id',
         'subject_name',
@@ -46,7 +46,7 @@ class ReportRequest extends Model
         return [
             'price' => 'decimal:2',
             'requires_review' => 'boolean',
-            'status' => ReportRequestStatus::class,
+            'status' => ReportOrderStatus::class,
             'assigned_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'submitted_at' => 'datetime',
@@ -69,9 +69,9 @@ class ReportRequest extends Model
         return $this->belongsTo(ScreeningPackage::class);
     }
 
-    public function requestedBy(): BelongsTo
+    public function orderedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'requested_by_user_id');
+        return $this->belongsTo(User::class, 'ordered_by_user_id');
     }
 
     public function assignedTo(): BelongsTo
@@ -91,7 +91,7 @@ class ReportRequest extends Model
 
     public function isAwaitingCandidate(): bool
     {
-        return $this->status === ReportRequestStatus::AwaitingCandidate;
+        return $this->status === ReportOrderStatus::AwaitingCandidate;
     }
 
     public function candidateHasCompleted(): bool
@@ -168,7 +168,7 @@ class ReportRequest extends Model
                     ->orWhere('notes', 'like', $term)
                     ->orWhereHas('organization', fn (Builder $org) => $org->where('name', 'like', $term))
                     ->orWhereHas('screeningPackage', fn (Builder $package) => $package->where('name', 'like', $term))
-                    ->orWhereHas('requestedBy', fn (Builder $user) => $user->where('name', 'like', $term)->orWhere('email', 'like', $term))
+                    ->orWhereHas('orderedBy', fn (Builder $user) => $user->where('name', 'like', $term)->orWhere('email', 'like', $term))
                     ->orWhereHas('assignedTo', fn (Builder $user) => $user->where('name', 'like', $term));
             });
         }
@@ -184,10 +184,10 @@ class ReportRequest extends Model
             ->where('requires_review', true)
             ->where('assigned_to_user_id', $userId)
             ->whereNotIn('status', [
-                ReportRequestStatus::AwaitingCandidate,
-                ReportRequestStatus::Submitted,
-                ReportRequestStatus::Rejected,
-                ReportRequestStatus::Cancelled,
+                ReportOrderStatus::AwaitingCandidate,
+                ReportOrderStatus::Submitted,
+                ReportOrderStatus::Rejected,
+                ReportOrderStatus::Cancelled,
             ]);
     }
 }

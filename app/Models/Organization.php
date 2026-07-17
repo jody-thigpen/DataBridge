@@ -82,9 +82,9 @@ class Organization extends Model
         return $this->screeningPackages()->where('screening_packages.is_active', true);
     }
 
-    public function reportRequests(): HasMany
+    public function reportOrders(): HasMany
     {
-        return $this->hasMany(ReportRequest::class);
+        return $this->hasMany(ReportOrder::class);
     }
 
     public function searchTypeSettings(): HasMany

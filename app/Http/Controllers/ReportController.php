@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
-use App\Models\ReportRequest;
+use App\Models\ReportOrder;
 use App\Services\OrganizationContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,17 +21,17 @@ class ReportController extends Controller
 
         $canViewAll = $request->user()?->hasPermission(Permission::OrgOrdersViewAll, $organization) ?? false;
 
-        $reportRequests = ReportRequest::query()
-            ->with(['screeningPackage', 'requestedBy', 'assignedTo'])
+        $reportOrders = ReportOrder::query()
+            ->with(['screeningPackage', 'orderedBy', 'assignedTo'])
             ->forOrganization($organization)
-            ->when(! $canViewAll, fn ($query) => $query->where('requested_by_user_id', $request->user()->id))
+            ->when(! $canViewAll, fn ($query) => $query->where('ordered_by_user_id', $request->user()->id))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
-        return view('reports.index', [
+        return view('report-orders.index', [
             'organization' => $organization,
-            'reportRequests' => $reportRequests,
+            'reportOrders' => $reportOrders,
             'canCreate' => $request->user()?->hasPermission(Permission::OrgOrdersCreate, $organization) ?? false,
         ]);
     }

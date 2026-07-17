@@ -1,13 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
         <x-page-header
-            title="New report request"
+            title="New report order"
             :subtitle="'Submit a screening order for ' . $organization->name"
         />
     </x-slot>
 
     <div class="panel max-w-3xl">
-        <form method="POST" action="{{ route('reports.requests.store') }}" class="panel-body space-y-5">
+        <form method="POST" action="{{ route('report-orders.store') }}" class="panel-body space-y-5">
             @csrf
 
             <div>
@@ -54,7 +54,7 @@
 
             <div class="flex items-center gap-3 border-t border-enterprise-200 pt-4">
                 <x-primary-button>Submit request &amp; email candidate</x-primary-button>
-                <a href="{{ route('reports.index') }}" class="link-action">Cancel</a>
+                <a href="{{ route('report-orders.index') }}" class="link-action">Cancel</a>
             </div>
         </form>
     </div>

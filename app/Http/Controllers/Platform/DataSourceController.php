@@ -83,7 +83,7 @@ class DataSourceController extends Controller
 
         return redirect()
             ->route('platform.data-sources.show', $dataSource)
-            ->with('status', "{$dataSource->name} created. Test the connection before enabling it for report requests.");
+            ->with('status', "{$dataSource->name} created. Test the connection before enabling it for report orders.");
     }
 
     public function show(Request $request, DataSource $dataSource): View

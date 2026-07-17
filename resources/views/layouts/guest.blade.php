@@ -32,7 +32,7 @@
                         The information you need to hire fast, secure and safe
                     </h1>
                     <p class="mt-4 text-sm leading-relaxed text-white/75">
-                        Securely manage screening requests, client organizations, and compliance workflows from DataBridge.
+                        Securely manage screening orders, client organizations, and compliance workflows from DataBridge.
                     </p>
                 </div>
 

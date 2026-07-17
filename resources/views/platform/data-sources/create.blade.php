@@ -61,7 +61,7 @@
                 <div class="flex items-center gap-2">
                     <input type="hidden" name="is_active" value="0">
                     <input id="is_active" name="is_active" type="checkbox" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_active'))>
-                    <x-input-label for="is_active" value="Enable for report requests" class="mb-0" />
+                    <x-input-label for="is_active" value="Enable for report orders" class="mb-0" />
                 </div>
             </div>
         </div>

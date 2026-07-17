@@ -20,7 +20,7 @@
 
     @if ($dataSource->needsConfiguration() && $canManageDataSources)
         <div class="alert-error mb-5">
-            This data source has not been configured yet. Enter the API base URL, username, and password provided by InformData, then test the connection and enable it for report requests.
+            This data source has not been configured yet. Enter the API base URL, username, and password provided by InformData, then test the connection and enable it for report orders.
         </div>
     @endif
 

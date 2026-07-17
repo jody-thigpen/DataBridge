@@ -139,7 +139,7 @@
                 @csrf
                 @method('PATCH')
                 <p class="text-sm text-enterprise-600">
-                    Assign a Saffhire client manager to this organization. New report requests requiring review are automatically assigned to this person, but individual requests can still be reassigned.
+                    Assign a Saffhire client manager to this organization. New report orders requiring review are automatically assigned to this person, but individual requests can still be reassigned.
                 </p>
                 <div>
                     <x-input-label for="client_manager_id" value="Client manager" />
@@ -315,7 +315,7 @@
             </div>
             <div class="panel-body space-y-4">
                 <p class="text-sm text-enterprise-600">
-                    Configure the questions candidates answer after a report request is submitted for this client.
+                    Configure the questions candidates answer after a report order is submitted for this client.
                     Defaults cover legal name, date of birth, phone, aliases, address history, and work history.
                 </p>
 

@@ -24,10 +24,10 @@
                             title="Platform users"
                             description="Create and manage Saffhire staff with in-house access levels."
                         />
-                        @if ($canViewReportRequestQueue)
+                        @if ($canViewReportOrderQueue)
                             <x-action-tile
-                                href="{{ route('platform.report-requests.index', ['assigned_to_user_id' => $user->id, 'requires_review' => '1']) }}"
-                                title="Report requests"
+                                href="{{ route('platform.report-orders.index', ['assigned_to_user_id' => $user->id, 'requires_review' => '1']) }}"
+                                title="Report orders"
                                 :description="$pendingReviewCount === 1 ? '1 report awaiting your review' : $pendingReviewCount . ' reports awaiting your review'"
                             />
                         @endif
@@ -39,14 +39,14 @@
                     </p>
                     <div class="grid gap-3 sm:grid-cols-2">
                         <x-action-tile
-                            href="{{ route('reports.requests.create') }}"
-                            title="New report request"
+                            href="{{ route('report-orders.create') }}"
+                            title="New report order"
                             description="Submit a background screening order for processing."
                         />
                         <x-action-tile
-                            href="{{ route('reports.index') }}"
-                            title="Completed reports"
-                            description="Review assembled report data for your organization."
+                            href="{{ route('report-orders.index') }}"
+                            title="Report orders"
+                            description="View and track screening orders for your organization."
                         />
                     </div>
                 @else
@@ -62,13 +62,13 @@
                 <h2 class="panel-title">Session details</h2>
             </div>
             <div class="panel-body space-y-4">
-                @if ($canViewReportRequestQueue)
+                @if ($canViewReportOrderQueue)
                     <div>
                         <div class="meta-label">Awaiting your review</div>
                         <div class="meta-value text-2xl font-semibold text-enterprise-900">{{ $pendingReviewCount }}</div>
                         @if ($pendingReviewCount > 0)
                             <a
-                                href="{{ route('platform.report-requests.index', ['assigned_to_user_id' => $user->id, 'requires_review' => '1']) }}"
+                                href="{{ route('platform.report-orders.index', ['assigned_to_user_id' => $user->id, 'requires_review' => '1']) }}"
                                 class="link-action mt-1 inline-block"
                             >
                                 Open review queue

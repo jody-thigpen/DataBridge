@@ -2,7 +2,7 @@
     <x-slot name="header">
         <x-page-header
             title="Data sources"
-            subtitle="Configure external APIs for submitting screening requests and receiving report data."
+            subtitle="Configure external APIs for submitting screening orders and receiving report data."
         >
             @if ($canManageDataSources)
                 <x-slot name="actions">

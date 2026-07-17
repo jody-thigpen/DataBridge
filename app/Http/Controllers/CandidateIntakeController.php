@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ReportRequestStatus;
+use App\Enums\ReportOrderStatus;
 use App\Models\ComplianceDocument;
-use App\Models\ReportRequest;
+use App\Models\ReportOrder;
 use App\Services\CandidateIntakeValidator;
 use App\Services\CandidateInviteService;
 use App\Services\TenantContext;
@@ -22,28 +22,28 @@ class CandidateIntakeController extends Controller
         CandidateIntakeValidator $validator,
         TenantContext $tenantContext,
     ): View {
-        $reportRequest = $this->findInvitedRequest($token, $tenantContext);
+        $reportOrder = $this->findInvitedOrder($token, $tenantContext);
 
-        if ($reportRequest->isInviteExpired()) {
+        if ($reportOrder->isInviteExpired()) {
             return view('candidate.expired', [
-                'organization' => $reportRequest->organization,
+                'organization' => $reportOrder->organization,
                 'ttlDays' => $inviteService->inviteTtlDays(),
             ]);
         }
 
-        $inviteService->markOpened($reportRequest);
+        $inviteService->markOpened($reportOrder);
 
-        $organization = $reportRequest->organization;
+        $organization = $reportOrder->organization;
         $questions = $validator->activeQuestionsFor($organization);
         $documents = $validator->acknowledgmentDocumentsFor($organization);
 
         return view('candidate.intake', [
-            'reportRequest' => $reportRequest,
+            'reportOrder' => $reportOrder,
             'organization' => $organization,
             'questions' => $questions,
             'documents' => $documents,
             'token' => $token,
-            'inviteExpiresAt' => $reportRequest->inviteExpiresAt(),
+            'inviteExpiresAt' => $reportOrder->inviteExpiresAt(),
         ]);
     }
 
@@ -54,10 +54,10 @@ class CandidateIntakeController extends Controller
         CandidateIntakeValidator $validator,
         TenantContext $tenantContext,
     ): RedirectResponse {
-        $reportRequest = $this->findInvitedRequest($token, $tenantContext);
-        $inviteService->assertInviteActive($reportRequest);
+        $reportOrder = $this->findInvitedOrder($token, $tenantContext);
+        $inviteService->assertInviteActive($reportOrder);
 
-        $organization = $reportRequest->organization;
+        $organization = $reportOrder->organization;
 
         $questions = $validator->activeQuestionsFor($organization);
         $documents = $validator->acknowledgmentDocumentsFor($organization);
@@ -65,14 +65,14 @@ class CandidateIntakeController extends Controller
         $validated = $validator->validate($questions, $documents, $request->all());
 
         $inviteService->complete(
-            $reportRequest,
+            $reportOrder,
             $validated['answers'],
             $validated['acknowledged_document_ids'],
             $request->ip() ?? '',
             $request->userAgent(),
         );
 
-        $request->session()->put('candidate_completed_request_id', $reportRequest->id);
+        $request->session()->put('candidate_completed_order_id', $reportOrder->id);
 
         return redirect()
             ->route('candidate.intake.thanks')
@@ -81,10 +81,10 @@ class CandidateIntakeController extends Controller
 
     public function thanks(Request $request, TenantContext $tenantContext): View
     {
-        $completedId = $request->session()->pull('candidate_completed_request_id');
+        $completedId = $request->session()->pull('candidate_completed_order_id');
 
-        $reportRequest = $completedId
-            ? ReportRequest::query()
+        $reportOrder = $completedId
+            ? ReportOrder::query()
                 ->withoutGlobalScopes()
                 ->with('organization')
                 ->where('tenant_id', $tenantContext->id())
@@ -93,11 +93,11 @@ class CandidateIntakeController extends Controller
                 ->first()
             : null;
 
-        abort_unless($reportRequest !== null, 404);
+        abort_unless($reportOrder !== null, 404);
 
         return view('candidate.thanks', [
-            'reportRequest' => $reportRequest,
-            'organization' => $reportRequest->organization,
+            'reportOrder' => $reportOrder,
+            'organization' => $reportOrder->organization,
         ]);
     }
 
@@ -107,10 +107,10 @@ class CandidateIntakeController extends Controller
         TenantContext $tenantContext,
         CandidateInviteService $inviteService,
     ): StreamedResponse {
-        $reportRequest = $this->findInvitedRequest($token, $tenantContext);
-        $inviteService->assertInviteActive($reportRequest);
+        $reportOrder = $this->findInvitedOrder($token, $tenantContext);
+        $inviteService->assertInviteActive($reportOrder);
 
-        abort_unless($complianceDocument->organization_id === $reportRequest->organization_id, 404);
+        abort_unless($complianceDocument->organization_id === $reportOrder->organization_id, 404);
         abort_unless($complianceDocument->is_active, 404);
         abort_unless(Storage::disk($complianceDocument->disk)->exists($complianceDocument->path), 404);
 
@@ -120,18 +120,18 @@ class CandidateIntakeController extends Controller
         );
     }
 
-    private function findInvitedRequest(string $token, TenantContext $tenantContext): ReportRequest
+    private function findInvitedOrder(string $token, TenantContext $tenantContext): ReportOrder
     {
-        $reportRequest = ReportRequest::query()
+        $reportOrder = ReportOrder::query()
             ->withoutGlobalScopes()
             ->with(['organization', 'screeningPackage'])
             ->where('tenant_id', $tenantContext->id())
             ->where('invite_token', $token)
-            ->where('status', ReportRequestStatus::AwaitingCandidate)
+            ->where('status', ReportOrderStatus::AwaitingCandidate)
             ->first();
 
-        abort_unless($reportRequest !== null, 404, 'This intake link is invalid or has already been used.');
+        abort_unless($reportOrder !== null, 404, 'This intake link is invalid or has already been used.');
 
-        return $reportRequest;
+        return $reportOrder;
     }
 }

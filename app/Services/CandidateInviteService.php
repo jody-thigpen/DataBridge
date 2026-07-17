@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\ReportRequestStatus;
+use App\Enums\ReportOrderStatus;
 use App\Models\Organization;
-use App\Models\ReportRequest;
+use App\Models\ReportOrder;
 use App\Models\ScreeningPackage;
 use Illuminate\Support\Str;
 
@@ -14,11 +14,11 @@ class CandidateInviteService
         private readonly SearchReviewPolicy $searchReviewPolicy,
     ) {}
 
-    public function issueToken(ReportRequest $reportRequest): string
+    public function issueToken(ReportOrder $reportOrder): string
     {
         $token = Str::random(64);
 
-        $reportRequest->forceFill([
+        $reportOrder->forceFill([
             'invite_token' => $token,
             'invite_sent_at' => now(),
             'candidate_opened_at' => null,
@@ -32,20 +32,20 @@ class CandidateInviteService
         return max(1, (int) config('candidate_intake.invite_ttl_days', 3));
     }
 
-    public function assertInviteActive(ReportRequest $reportRequest): void
+    public function assertInviteActive(ReportOrder $reportOrder): void
     {
-        if ($reportRequest->isInviteExpired()) {
+        if ($reportOrder->isInviteExpired()) {
             abort(410, 'This intake link has expired. Please ask the requesting organization to resend your invitation.');
         }
     }
 
-    public function markOpened(ReportRequest $reportRequest): void
+    public function markOpened(ReportOrder $reportOrder): void
     {
-        if ($reportRequest->candidate_opened_at !== null) {
+        if ($reportOrder->candidate_opened_at !== null) {
             return;
         }
 
-        $reportRequest->forceFill(['candidate_opened_at' => now()])->save();
+        $reportOrder->forceFill(['candidate_opened_at' => now()])->save();
     }
 
     /**
@@ -53,14 +53,14 @@ class CandidateInviteService
      * @param  list<int>  $acknowledgedDocumentIds
      */
     public function complete(
-        ReportRequest $reportRequest,
+        ReportOrder $reportOrder,
         array $answers,
         array $acknowledgedDocumentIds,
         string $ipAddress,
         ?string $userAgent,
     ): void {
-        $organization = $reportRequest->organization;
-        $package = $reportRequest->screeningPackage;
+        $organization = $reportOrder->organization;
+        $package = $reportOrder->screeningPackage;
 
         abort_unless($organization instanceof Organization && $package instanceof ScreeningPackage, 404);
 
@@ -69,15 +69,15 @@ class CandidateInviteService
 
         $assignedToUserId = null;
         $assignedAt = null;
-        $status = $requiresReview ? ReportRequestStatus::PendingReview : ReportRequestStatus::Submitted;
+        $status = $requiresReview ? ReportOrderStatus::PendingReview : ReportOrderStatus::Submitted;
 
         if ($requiresReview && $organization->client_manager_id !== null) {
             $assignedToUserId = $organization->client_manager_id;
             $assignedAt = now();
-            $status = ReportRequestStatus::Assigned;
+            $status = ReportOrderStatus::Assigned;
         }
 
-        $reportRequest->forceFill([
+        $reportOrder->forceFill([
             'candidate_answers' => $answers,
             'acknowledged_document_ids' => $acknowledgedDocumentIds,
             'candidate_completed_at' => now(),

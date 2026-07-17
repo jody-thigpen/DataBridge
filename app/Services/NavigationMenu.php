@@ -41,8 +41,8 @@ class NavigationMenu
                 $this->item('Packages', 'platform.packages.index', ['platform.packages.*']),
             ];
 
-            if ($user->hasPermission(Permission::PlatformReportRequestsView)) {
-                $platformItems[] = $this->item('Report requests', 'platform.report-requests.index', ['platform.report-requests.*']);
+            if ($user->hasPermission(Permission::PlatformReportOrdersView)) {
+                $platformItems[] = $this->item('Report orders', 'platform.report-orders.index', ['platform.report-orders.*']);
             }
 
             $platformItems[] = $this->item('Platform users', 'platform.users.index', ['platform.users.*']);
@@ -59,12 +59,12 @@ class NavigationMenu
             $workspaceItems = [];
 
             if ($user->hasPermission(Permission::OrgOrdersCreate, $organization)) {
-                $workspaceItems[] = $this->item('New report request', 'reports.requests.create', ['reports.requests.*']);
+                $workspaceItems[] = $this->item('New report order', 'report-orders.create', ['report-orders.create']);
             }
 
             if ($user->hasPermission(Permission::OrgOrdersView, $organization)
                 || $user->hasPermission(Permission::OrgOrdersViewAll, $organization)) {
-                $workspaceItems[] = $this->item('Report requests', 'reports.index', ['reports.index']);
+                $workspaceItems[] = $this->item('Report orders', 'report-orders.index', ['report-orders.index', 'report-orders.resend-invite']);
             }
 
             if ($user->hasPermission(Permission::OrgUsersManage, $organization)

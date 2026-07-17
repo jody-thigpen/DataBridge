@@ -93,7 +93,7 @@ class ComplianceDocumentController extends Controller
         abort_unless(
             $request->user()?->hasPermission(Permission::PlatformCatalogManage)
             || $request->user()?->hasPermission(Permission::PlatformOrganizationsManage)
-            || $request->user()?->hasPermission(Permission::PlatformReportRequestsView),
+            || $request->user()?->hasPermission(Permission::PlatformReportOrdersView),
             403,
         );
         abort_unless($complianceDocument->organization_id === $organization->id, 404);

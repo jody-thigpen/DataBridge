@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrganizationRole;
 use App\Enums\PlatformRole;
 use App\Models\Organization;
-use App\Models\ReportRequest;
+use App\Models\ReportOrder;
 use App\Models\User;
 use Database\Seeders\InformDataDataSourceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -69,10 +69,10 @@ class ApplicationUiTest extends TestCase
         $user->assignRole(OrganizationRole::Recruiter, $organization);
 
         $this->actingAs($user)
-            ->get(route('reports.index'))
+            ->get(route('report-orders.index'))
             ->assertOk()
-            ->assertSee('Report requests')
-            ->assertSee('No report requests submitted yet');
+            ->assertSee('Report orders')
+            ->assertSee('No report orders submitted yet');
     }
 
     public function test_platform_user_can_exit_client_organization_view(): void
@@ -98,10 +98,10 @@ class ApplicationUiTest extends TestCase
         $this->seed(InformDataDataSourceSeeder::class);
         $this->seed(SearchTypeSeeder::class);
 
-        [$organization, $package, $clientUser] = $this->reportRequestContext();
+        [$organization, $package, $clientUser] = $this->reportOrderContext();
 
         session(['organization_id' => $organization->id]);
-        $this->actingAs($clientUser)->post(route('reports.requests.store'), [
+        $this->actingAs($clientUser)->post(route('report-orders.store'), [
             'subject_name' => 'Taylor Candidate',
             'candidate_email' => 'taylor@example.test',
             'screening_package_id' => $package->id,
@@ -110,9 +110,9 @@ class ApplicationUiTest extends TestCase
         $reviewer = User::factory()->create(['email_verified_at' => now(), 'name' => 'Ops Reviewer']);
         $reviewer->assignRole(PlatformRole::Admin);
 
-        ReportRequest::query()->firstOrFail()->update([
+        ReportOrder::query()->firstOrFail()->update([
             'assigned_to_user_id' => $reviewer->id,
-            'status' => \App\Enums\ReportRequestStatus::Assigned,
+            'status' => \App\Enums\ReportOrderStatus::Assigned,
             'candidate_completed_at' => now(),
             'authorization_accepted_at' => now(),
             'invite_token' => null,
@@ -129,7 +129,7 @@ class ApplicationUiTest extends TestCase
     /**
      * @return array{0: Organization, 1: \App\Models\ScreeningPackage, 2: User}
      */
-    private function reportRequestContext(): array
+    private function reportOrderContext(): array
     {
         $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
         $clientUser = User::factory()->create([

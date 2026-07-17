@@ -52,7 +52,7 @@
                             <option value="{{ $manager->id }}" @selected(old('client_manager_id') == $manager->id)>{{ $manager->name }} ({{ $manager->email }})</option>
                         @endforeach
                     </select>
-                    <p class="mt-1 text-xs text-enterprise-500">Report requests requiring review will be automatically assigned to this manager.</p>
+                    <p class="mt-1 text-xs text-enterprise-500">Report orders requiring review will be automatically assigned to this manager.</p>
                     <x-input-error :messages="$errors->get('client_manager_id')" class="mt-2" />
                 </div>
             </div>

@@ -43,7 +43,7 @@
                     <h1 class="text-2xl font-bold text-enterprise-900">Background screening intake</h1>
                     <p class="text-sm leading-relaxed text-enterprise-600">
                         {{ $organization->name }} has requested information to complete a background screening for
-                        <span class="font-medium text-enterprise-900">{{ $reportRequest->subject_name }}</span>
+                        <span class="font-medium text-enterprise-900">{{ $reportOrder->subject_name }}</span>
                         through SaffHire DataBridge. Please answer the questions below and authorize the screening.
                     </p>
                     @if ($inviteExpiresAt)
@@ -148,7 +148,7 @@
                                 I authorize {{ $organization->name }} and its designated consumer reporting agency partners,
                                 working through SaffHire DataBridge, to obtain information about my identity, address history,
                                 employment history, criminal and civil records, and other background information as permitted by law
-                                for the purpose of this screening request. I certify that the information I provided is true and complete.
+                                for the purpose of this screening order. I certify that the information I provided is true and complete.
                             </span>
                         </label>
                         <x-input-error :messages="$errors->get('authorization_accepted')" class="mt-2" />

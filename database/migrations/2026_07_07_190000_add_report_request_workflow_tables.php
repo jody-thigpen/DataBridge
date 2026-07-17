@@ -24,11 +24,11 @@ return new class extends Migration
             $table->unique(['organization_id', 'search_type_id'], 'org_search_type_settings_unique');
         });
 
-        Schema::create('report_requests', function (Blueprint $table) {
+        Schema::create('report_orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignId('screening_package_id')->constrained();
-            $table->foreignId('requested_by_user_id')->constrained('users');
+            $table->foreignId('ordered_by_user_id')->constrained('users');
             $table->foreignId('assigned_to_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('reviewed_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('subject_name');
@@ -51,7 +51,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('report_requests');
+        Schema::dropIfExists('report_orders');
         Schema::dropIfExists('organization_search_type_settings');
 
         Schema::table('search_types', function (Blueprint $table) {

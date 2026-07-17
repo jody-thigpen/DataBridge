@@ -15,10 +15,10 @@ return new class extends Migration
         $this->addTenantColumn('data_sources');
         $this->addTenantColumn('search_types');
         $this->addTenantColumn('screening_packages');
-        $this->addTenantColumn('report_requests');
+        $this->addTenantColumn('report_orders');
         $this->addTenantColumn('organization_package_prices');
         $this->addTenantColumn('organization_search_type_settings');
-        $this->addTenantColumn('saved_report_request_filters');
+        $this->addTenantColumn('saved_report_order_filters');
         $this->addTenantColumn('package_search_type');
         $this->addTenantColumn('organization_screening_package');
 
@@ -82,10 +82,10 @@ return new class extends Migration
         foreach ([
             'organization_screening_package',
             'package_search_type',
-            'saved_report_request_filters',
+            'saved_report_order_filters',
             'organization_search_type_settings',
             'organization_package_prices',
-            'report_requests',
+            'report_orders',
             'screening_packages',
             'search_types',
             'data_sources',

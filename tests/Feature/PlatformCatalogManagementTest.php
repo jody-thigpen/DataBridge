@@ -253,7 +253,7 @@ class PlatformCatalogManagementTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_report_request_form_lists_only_assigned_packages_with_client_price(): void
+    public function test_report_order_form_lists_only_assigned_packages_with_client_price(): void
     {
         $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
         $user = User::factory()->create([
@@ -281,7 +281,7 @@ class PlatformCatalogManagementTest extends TestCase
         $organization->screeningPackages()->attach($assignedPackage->id);
 
         $this->actingAs($user)
-            ->get(route('reports.requests.create'))
+            ->get(route('report-orders.create'))
             ->assertOk()
             ->assertSee('Executive Package')
             ->assertSee('$99.00')

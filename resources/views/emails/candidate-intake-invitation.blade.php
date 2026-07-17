@@ -3,7 +3,7 @@
 
 Hello {{ $subjectName }},
 
-**{{ $organizationName }}** has started a background screening request through SaffHire DataBridge. Please complete the secure intake form so screening can continue.
+**{{ $organizationName }}** has started a background screening order through SaffHire DataBridge. Please complete the secure intake form so screening can continue.
 
 You will be asked for personal details such as address and work history, and to authorize {{ $organizationName }} (a SaffHire DataBridge client) to query relevant data sources for information about your history.
 

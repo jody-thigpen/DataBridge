@@ -54,6 +54,6 @@ Open http://127.0.0.1:8000/login and sign in with your seeded super admin accoun
 | Audience | Features |
 |----------|----------|
 | **Saffhire staff** | Clients list, platform user management, masquerade as any client user |
-| **Client users** | Report requests, reports (placeholder), org profile, billing (placeholder), team users |
+| **Client users** | Report orders, reports (placeholder), org profile, billing (placeholder), team users |
 
 Platform staff click **Enter organization** on a client to work in that client's context, or **Masquerade** to sign in as a specific client user.

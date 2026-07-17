@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\OrganizationRole;
 use App\Enums\PlatformRole;
-use App\Enums\ReportRequestStatus;
+use App\Enums\ReportOrderStatus;
 use App\Models\Organization;
-use App\Models\ReportRequest;
+use App\Models\ReportOrder;
 use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
@@ -72,7 +72,7 @@ class ClientManagerAssignmentTest extends TestCase
         $this->assertSame($manager->id, $organization->fresh()->client_manager_id);
     }
 
-    public function test_report_request_is_auto_assigned_to_client_manager_when_review_required(): void
+    public function test_report_order_is_auto_assigned_to_client_manager_when_review_required(): void
     {
         [$organization, $package, $user, $manager] = $this->clientContextWithManager();
         app(\App\Services\CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
@@ -80,17 +80,17 @@ class ClientManagerAssignmentTest extends TestCase
         session(['organization_id' => $organization->id]);
 
         $this->actingAs($user)
-            ->post(route('reports.requests.store'), [
+            ->post(route('report-orders.store'), [
                 'subject_name' => 'Jordan Applicant',
                 'candidate_email' => 'jordan@example.test',
                 'screening_package_id' => $package->id,
             ])
-            ->assertRedirect(route('reports.index'));
+            ->assertRedirect(route('report-orders.index'));
 
-        $reportRequest = ReportRequest::query()->firstOrFail();
-        $this->assertSame(ReportRequestStatus::AwaitingCandidate, $reportRequest->status);
+        $reportOrder = ReportOrder::query()->firstOrFail();
+        $this->assertSame(ReportOrderStatus::AwaitingCandidate, $reportOrder->status);
 
-        $this->post(route('candidate.intake.store', $reportRequest->invite_token), [
+        $this->post(route('candidate.intake.store', $reportOrder->invite_token), [
             'answers' => [
                 'legal_name' => 'Jordan Applicant',
                 'date_of_birth' => '1990-01-15',
@@ -118,29 +118,29 @@ class ClientManagerAssignmentTest extends TestCase
             'authorization_accepted' => '1',
         ])->assertRedirect(route('candidate.intake.thanks'));
 
-        $reportRequest->refresh();
+        $reportOrder->refresh();
 
-        $this->assertSame(ReportRequestStatus::Assigned, $reportRequest->status);
-        $this->assertSame($manager->id, $reportRequest->assigned_to_user_id);
-        $this->assertNotNull($reportRequest->assigned_at);
+        $this->assertSame(ReportOrderStatus::Assigned, $reportOrder->status);
+        $this->assertSame($manager->id, $reportOrder->assigned_to_user_id);
+        $this->assertNotNull($reportOrder->assigned_at);
     }
 
-    public function test_report_request_can_be_reassigned_to_another_platform_user(): void
+    public function test_report_order_can_be_reassigned_to_another_platform_user(): void
     {
         [$organization, $package, $user, $manager] = $this->clientContextWithManager();
         app(\App\Services\CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
 
         session(['organization_id' => $organization->id]);
 
-        $this->actingAs($user)->post(route('reports.requests.store'), [
+        $this->actingAs($user)->post(route('report-orders.store'), [
             'subject_name' => 'Jordan Applicant',
             'candidate_email' => 'jordan@example.test',
             'screening_package_id' => $package->id,
         ]);
 
-        $reportRequest = ReportRequest::query()->firstOrFail();
+        $reportOrder = ReportOrder::query()->firstOrFail();
 
-        $this->post(route('candidate.intake.store', $reportRequest->invite_token), [
+        $this->post(route('candidate.intake.store', $reportOrder->invite_token), [
             'answers' => [
                 'legal_name' => 'Jordan Applicant',
                 'date_of_birth' => '1990-01-15',
@@ -172,14 +172,14 @@ class ClientManagerAssignmentTest extends TestCase
         $operationsUser->assignRole(PlatformRole::Operations);
 
         $this->actingAs($operationsUser)
-            ->patch(route('platform.report-requests.assign', $reportRequest), [
+            ->patch(route('platform.report-orders.assign', $reportOrder), [
                 'assigned_to_user_id' => $operationsUser->id,
             ])
             ->assertRedirect();
 
-        $reportRequest->refresh();
+        $reportOrder->refresh();
 
-        $this->assertSame($operationsUser->id, $reportRequest->assigned_to_user_id);
+        $this->assertSame($operationsUser->id, $reportOrder->assigned_to_user_id);
     }
 
     /**

@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('saved_report_request_filters', function (Blueprint $table) {
+        Schema::create('saved_report_order_filters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('saved_report_request_filters');
+        Schema::dropIfExists('saved_report_order_filters');
     }
 };

@@ -56,8 +56,8 @@ class User extends Authenticatable
         return $this->hasMany(Organization::class, 'client_manager_id');
     }
 
-    public function savedReportRequestFilters(): HasMany
+    public function savedReportOrderFilters(): HasMany
     {
-        return $this->hasMany(SavedReportRequestFilter::class);
+        return $this->hasMany(SavedReportOrderFilter::class);
     }
 }

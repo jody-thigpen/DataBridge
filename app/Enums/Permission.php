@@ -10,8 +10,8 @@ enum Permission: string
     case PlatformSettingsManage = 'platform.settings.manage';
     case PlatformDataSourcesManage = 'platform.data_sources.manage';
     case PlatformCatalogManage = 'platform.catalog.manage';
-    case PlatformReportRequestsView = 'platform.report_requests.view';
-    case PlatformReportRequestsManage = 'platform.report_requests.manage';
+    case PlatformReportOrdersView = 'platform.report_orders.view';
+    case PlatformReportOrdersManage = 'platform.report_orders.manage';
     case PlatformAuditView = 'platform.audit.view';
 
     // Organization

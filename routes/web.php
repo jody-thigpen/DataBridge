@@ -10,7 +10,7 @@ use App\Http\Controllers\Platform\DataSourceController;
 use App\Http\Controllers\Platform\ImpersonationController;
 use App\Http\Controllers\Platform\OrganizationPackagePriceController;
 use App\Http\Controllers\Platform\OrganizationSearchTypeSettingController;
-use App\Http\Controllers\Platform\ReportRequestController as PlatformReportRequestController;
+use App\Http\Controllers\Platform\ReportOrderController as PlatformReportOrderController;
 use App\Http\Controllers\Platform\ScreeningPackageController;
 use App\Http\Controllers\Platform\SearchTypeController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
@@ -19,7 +19,7 @@ use App\Http\Controllers\Organization\ProfileController as OrganizationProfileCo
 use App\Http\Controllers\Organization\UserController as OrganizationUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ReportRequestController;
+use App\Http\Controllers\ReportOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -61,13 +61,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/clients/{organization}/compliance-documents/{complianceDocument}', [ComplianceDocumentController::class, 'destroy'])->name('clients.compliance-documents.destroy');
         Route::get('/clients/{organization}/compliance-documents/{complianceDocument}/download', [ComplianceDocumentController::class, 'download'])->name('clients.compliance-documents.download');
 
-        Route::get('/report-requests', [PlatformReportRequestController::class, 'index'])->name('report-requests.index');
-        Route::post('/report-requests/filters', [PlatformReportRequestController::class, 'storeFilter'])->name('report-requests.filters.store');
-        Route::delete('/report-requests/filters/{savedReportRequestFilter}', [PlatformReportRequestController::class, 'destroyFilter'])->name('report-requests.filters.destroy');
-        Route::get('/report-requests/{reportRequest}', [PlatformReportRequestController::class, 'show'])->name('report-requests.show');
-        Route::patch('/report-requests/{reportRequest}/assign', [PlatformReportRequestController::class, 'assign'])->name('report-requests.assign');
-        Route::patch('/report-requests/{reportRequest}/approve', [PlatformReportRequestController::class, 'approve'])->name('report-requests.approve');
-        Route::patch('/report-requests/{reportRequest}/reject', [PlatformReportRequestController::class, 'reject'])->name('report-requests.reject');
+        Route::get('/report-orders', [PlatformReportOrderController::class, 'index'])->name('report-orders.index');
+        Route::post('/report-orders/filters', [PlatformReportOrderController::class, 'storeFilter'])->name('report-orders.filters.store');
+        Route::delete('/report-orders/filters/{savedReportOrderFilter}', [PlatformReportOrderController::class, 'destroyFilter'])->name('report-orders.filters.destroy');
+        Route::get('/report-orders/{reportOrder}', [PlatformReportOrderController::class, 'show'])->name('report-orders.show');
+        Route::patch('/report-orders/{reportOrder}/assign', [PlatformReportOrderController::class, 'assign'])->name('report-orders.assign');
+        Route::patch('/report-orders/{reportOrder}/approve', [PlatformReportOrderController::class, 'approve'])->name('report-orders.approve');
+        Route::patch('/report-orders/{reportOrder}/reject', [PlatformReportOrderController::class, 'reject'])->name('report-orders.reject');
 
         Route::get('/search-types', [SearchTypeController::class, 'index'])->name('search-types.index');
         Route::get('/search-types/create', [SearchTypeController::class, 'create'])->name('search-types.create');
@@ -103,10 +103,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('platform.impersonation.destroy');
 
     Route::middleware('org.access')->group(function () {
-        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/requests/create', [ReportRequestController::class, 'create'])->name('reports.requests.create');
-        Route::post('/reports/requests', [ReportRequestController::class, 'store'])->name('reports.requests.store');
-        Route::post('/reports/requests/{reportRequest}/resend-invite', [ReportRequestController::class, 'resendInvite'])->name('reports.requests.resend-invite');
+        Route::get('/report-orders', [ReportController::class, 'index'])->name('report-orders.index');
+        Route::get('/report-orders/create', [ReportOrderController::class, 'create'])->name('report-orders.create');
+        Route::post('/report-orders', [ReportOrderController::class, 'store'])->name('report-orders.store');
+        Route::post('/report-orders/{reportOrder}/resend-invite', [ReportOrderController::class, 'resendInvite'])->name('report-orders.resend-invite');
 
         Route::get('/organization/profile', [OrganizationProfileController::class, 'edit'])->name('organization.profile.edit');
         Route::patch('/organization/profile', [OrganizationProfileController::class, 'update'])->name('organization.profile.update');

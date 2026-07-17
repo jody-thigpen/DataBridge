@@ -1,11 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="Report requests" subtitle="All client screening requests awaiting review or execution.">
+        <x-page-header title="Report orders" subtitle="All client screening orders awaiting review or execution.">
         </x-page-header>
     </x-slot>
 
     <div class="panel mb-5">
-        <form method="GET" action="{{ route('platform.report-requests.index') }}" class="panel-body grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <form method="GET" action="{{ route('platform.report-orders.index') }}" class="panel-body grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <x-input-label for="q" value="Search" />
                 <x-text-input id="q" name="q" class="mt-1 block w-full" :value="$filters['q'] ?? ''" placeholder="Subject, client, package, requester..." />
@@ -56,14 +56,14 @@
             </div>
             <div class="flex items-end gap-2">
                 <x-primary-button>Apply filters</x-primary-button>
-                <a href="{{ route('platform.report-requests.index') }}" class="btn-secondary">Reset</a>
+                <a href="{{ route('platform.report-orders.index') }}" class="btn-secondary">Reset</a>
             </div>
         </form>
 
         <div class="border-t border-enterprise-200 px-4 py-4">
-            <form method="POST" action="{{ route('platform.report-requests.filters.store') }}" class="flex flex-wrap items-end gap-3">
+            <form method="POST" action="{{ route('platform.report-orders.filters.store') }}" class="flex flex-wrap items-end gap-3">
                 @csrf
-                @foreach (\App\Models\SavedReportRequestFilter::FILTER_KEYS as $filterKey)
+                @foreach (\App\Models\SavedReportOrderFilter::FILTER_KEYS as $filterKey)
                     @if (! empty($filters[$filterKey]))
                         <input type="hidden" name="{{ $filterKey }}" value="{{ $filters[$filterKey] }}">
                     @endif
@@ -85,7 +85,7 @@
                     @foreach ($savedFilters as $savedFilter)
                         <li class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-enterprise-200 px-3 py-2">
                             <div>
-                                <a href="{{ route('platform.report-requests.index', $savedFilter->filters) }}" class="font-medium text-brand-700 hover:text-brand-800">
+                                <a href="{{ route('platform.report-orders.index', $savedFilter->filters) }}" class="font-medium text-brand-700 hover:text-brand-800">
                                     {{ $savedFilter->name }}
                                 </a>
                                 <p class="text-xs text-enterprise-500">
@@ -94,7 +94,7 @@
                             </div>
                             <form
                                 method="POST"
-                                action="{{ route('platform.report-requests.filters.destroy', $savedFilter) }}"
+                                action="{{ route('platform.report-orders.filters.destroy', $savedFilter) }}"
                                 class="inline"
                                 onsubmit="return confirm('Delete saved filter \"{{ $savedFilter->name }}\"?');"
                             >
@@ -117,7 +117,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Requested</th>
+                        <th>Ordered</th>
                         <th>Client</th>
                         <th>Subject</th>
                         <th>Package</th>
@@ -128,26 +128,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($reportRequests as $reportRequest)
+                    @forelse ($reportOrders as $reportOrder)
                         <tr>
-                            <td class="text-enterprise-600 whitespace-nowrap">{{ $reportRequest->created_at->format('M j, Y g:i A') }}</td>
-                            <td class="text-enterprise-600">{{ $reportRequest->organization->name }}</td>
-                            <td class="font-medium text-enterprise-900">{{ $reportRequest->subject_name }}</td>
-                            <td class="text-enterprise-600">{{ $reportRequest->screeningPackage->name }}</td>
-                            <td class="text-enterprise-600">{{ $reportRequest->formattedPrice() }}</td>
+                            <td class="text-enterprise-600 whitespace-nowrap">{{ $reportOrder->created_at->format('M j, Y g:i A') }}</td>
+                            <td class="text-enterprise-600">{{ $reportOrder->organization->name }}</td>
+                            <td class="font-medium text-enterprise-900">{{ $reportOrder->subject_name }}</td>
+                            <td class="text-enterprise-600">{{ $reportOrder->screeningPackage->name }}</td>
+                            <td class="text-enterprise-600">{{ $reportOrder->formattedPrice() }}</td>
                             <td>
-                                <span @class(['badge', $reportRequest->status->badgeClass()])>
-                                    {{ $reportRequest->status->label() }}
+                                <span @class(['badge', $reportOrder->status->badgeClass()])>
+                                    {{ $reportOrder->status->label() }}
                                 </span>
                             </td>
-                            <td class="text-enterprise-600">{{ $reportRequest->assignedTo?->name ?? '—' }}</td>
+                            <td class="text-enterprise-600">{{ $reportOrder->assignedTo?->name ?? '—' }}</td>
                             <td class="text-right">
-                                <a href="{{ route('platform.report-requests.show', $reportRequest) }}" class="link-action">Review</a>
+                                <a href="{{ route('platform.report-orders.show', $reportOrder) }}" class="link-action">Review</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="py-10 text-center text-enterprise-500">No report requests match the current filters.</td>
+                            <td colspan="8" class="py-10 text-center text-enterprise-500">No report orders match the current filters.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -155,5 +155,5 @@
         </div>
     </div>
 
-    <div class="mt-4">{{ $reportRequests->links() }}</div>
+    <div class="mt-4">{{ $reportOrders->links() }}</div>
 </x-app-layout>

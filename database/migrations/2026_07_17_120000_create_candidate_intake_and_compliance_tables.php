@@ -47,7 +47,7 @@ return new class extends Migration
             $table->index(['organization_id', 'is_active', 'sort_order'], 'cd_org_active_sort_idx');
         });
 
-        Schema::table('report_requests', function (Blueprint $table) {
+        Schema::table('report_orders', function (Blueprint $table) {
             $table->string('candidate_email')->nullable()->after('subject_name');
             $table->string('candidate_phone')->nullable()->after('candidate_email');
             $table->string('invite_token', 64)->nullable()->unique()->after('candidate_phone');
@@ -64,7 +64,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('report_requests', function (Blueprint $table) {
+        Schema::table('report_orders', function (Blueprint $table) {
             $table->dropColumn([
                 'candidate_email',
                 'candidate_phone',

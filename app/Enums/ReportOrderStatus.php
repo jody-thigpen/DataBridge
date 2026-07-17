@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum ReportRequestStatus: string
+enum ReportOrderStatus: string
 {
     case AwaitingCandidate = 'awaiting_candidate';
     case PendingReview = 'pending_review';
