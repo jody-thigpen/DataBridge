@@ -92,6 +92,16 @@ class Organization extends Model
         return $this->hasMany(OrganizationSearchTypeSetting::class);
     }
 
+    public function candidateFormQuestions(): HasMany
+    {
+        return $this->hasMany(CandidateFormQuestion::class);
+    }
+
+    public function complianceDocuments(): HasMany
+    {
+        return $this->hasMany(ComplianceDocument::class);
+    }
+
     public function isAncestorOf(self $organization): bool
     {
         $parent = $organization->parent;

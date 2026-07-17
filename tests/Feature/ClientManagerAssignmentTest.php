@@ -14,6 +14,7 @@ use Database\Seeders\InformDataDataSourceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SearchTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ClientManagerAssignmentTest extends TestCase
@@ -27,6 +28,7 @@ class ClientManagerAssignmentTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(InformDataDataSourceSeeder::class);
         $this->seed(SearchTypeSeeder::class);
+        Mail::fake();
     }
 
     public function test_platform_admin_can_assign_client_manager_on_create(): void
@@ -73,17 +75,50 @@ class ClientManagerAssignmentTest extends TestCase
     public function test_report_request_is_auto_assigned_to_client_manager_when_review_required(): void
     {
         [$organization, $package, $user, $manager] = $this->clientContextWithManager();
+        app(\App\Services\CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
 
         session(['organization_id' => $organization->id]);
 
         $this->actingAs($user)
             ->post(route('reports.requests.store'), [
                 'subject_name' => 'Jordan Applicant',
+                'candidate_email' => 'jordan@example.test',
                 'screening_package_id' => $package->id,
             ])
             ->assertRedirect(route('reports.index'));
 
         $reportRequest = ReportRequest::query()->firstOrFail();
+        $this->assertSame(ReportRequestStatus::AwaitingCandidate, $reportRequest->status);
+
+        $this->post(route('candidate.intake.store', $reportRequest->invite_token), [
+            'answers' => [
+                'legal_name' => 'Jordan Applicant',
+                'date_of_birth' => '1990-01-15',
+                'mobile_phone' => '555-0100',
+                'other_names' => '',
+                'address_history' => [[
+                    'line1' => '123 Main St',
+                    'line2' => '',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'postal' => '78701',
+                    'from' => '2020-01',
+                    'to' => '',
+                ]],
+                'work_history' => [[
+                    'employer' => 'Acme Corp',
+                    'title' => 'Analyst',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'from' => '2021-03',
+                    'to' => '',
+                    'reason_for_leaving' => '',
+                ]],
+            ],
+            'authorization_accepted' => '1',
+        ])->assertRedirect(route('candidate.intake.thanks'));
+
+        $reportRequest->refresh();
 
         $this->assertSame(ReportRequestStatus::Assigned, $reportRequest->status);
         $this->assertSame($manager->id, $reportRequest->assigned_to_user_id);
@@ -93,15 +128,46 @@ class ClientManagerAssignmentTest extends TestCase
     public function test_report_request_can_be_reassigned_to_another_platform_user(): void
     {
         [$organization, $package, $user, $manager] = $this->clientContextWithManager();
+        app(\App\Services\CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
 
         session(['organization_id' => $organization->id]);
 
         $this->actingAs($user)->post(route('reports.requests.store'), [
             'subject_name' => 'Jordan Applicant',
+            'candidate_email' => 'jordan@example.test',
             'screening_package_id' => $package->id,
         ]);
 
         $reportRequest = ReportRequest::query()->firstOrFail();
+
+        $this->post(route('candidate.intake.store', $reportRequest->invite_token), [
+            'answers' => [
+                'legal_name' => 'Jordan Applicant',
+                'date_of_birth' => '1990-01-15',
+                'mobile_phone' => '555-0100',
+                'other_names' => '',
+                'address_history' => [[
+                    'line1' => '123 Main St',
+                    'line2' => '',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'postal' => '78701',
+                    'from' => '2020-01',
+                    'to' => '',
+                ]],
+                'work_history' => [[
+                    'employer' => 'Acme Corp',
+                    'title' => 'Analyst',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'from' => '2021-03',
+                    'to' => '',
+                    'reason_for_leaving' => '',
+                ]],
+            ],
+            'authorization_accepted' => '1',
+        ]);
+
         $operationsUser = User::factory()->create(['email_verified_at' => now()]);
         $operationsUser->assignRole(PlatformRole::Operations);
 

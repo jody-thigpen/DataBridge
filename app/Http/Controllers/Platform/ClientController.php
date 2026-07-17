@@ -11,6 +11,7 @@ use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
 use App\Support\TenantRule;
+use App\Services\CandidateFormQuestionDefaults;
 use App\Services\OrganizationContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -84,6 +85,8 @@ class ClientController extends Controller
 
             $admin->assignRole(OrganizationRole::ClientAdmin, $organization);
 
+            app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
+
             return $organization;
         });
 
@@ -131,6 +134,19 @@ class ClientController extends Controller
 
         $clientManagers = User::query()->clientManagers()->get();
 
+        $candidateQuestions = $organization->candidateFormQuestions()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $complianceDocuments = $organization->complianceDocuments()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $questionTypes = \App\Enums\CandidateFormQuestionType::cases();
+        $documentTypes = \App\Enums\ComplianceDocumentType::cases();
+
         return view('platform.clients.show', compact(
             'organization',
             'canManageClients',
@@ -142,6 +158,10 @@ class ClientController extends Controller
             'searchTypes',
             'searchTypeSettings',
             'clientManagers',
+            'candidateQuestions',
+            'complianceDocuments',
+            'questionTypes',
+            'documentTypes',
         ));
     }
 

@@ -11,6 +11,7 @@ use Database\Seeders\InformDataDataSourceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SearchTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ApplicationUiTest extends TestCase
@@ -22,6 +23,7 @@ class ApplicationUiTest extends TestCase
         parent::setUp();
 
         $this->seed(RoleAndPermissionSeeder::class);
+        Mail::fake();
     }
 
     public function test_guest_is_redirected_to_login(): void
@@ -101,6 +103,7 @@ class ApplicationUiTest extends TestCase
         session(['organization_id' => $organization->id]);
         $this->actingAs($clientUser)->post(route('reports.requests.store'), [
             'subject_name' => 'Taylor Candidate',
+            'candidate_email' => 'taylor@example.test',
             'screening_package_id' => $package->id,
         ]);
 
@@ -110,6 +113,9 @@ class ApplicationUiTest extends TestCase
         ReportRequest::query()->firstOrFail()->update([
             'assigned_to_user_id' => $reviewer->id,
             'status' => \App\Enums\ReportRequestStatus::Assigned,
+            'candidate_completed_at' => now(),
+            'authorization_accepted_at' => now(),
+            'invite_token' => null,
         ]);
 
         $this->actingAs($reviewer)

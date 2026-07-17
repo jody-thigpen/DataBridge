@@ -303,4 +303,233 @@
             </form>
         </div>
     @endif
+
+    @if ($canManageCatalog)
+        <div class="panel mt-5">
+            <div class="panel-header flex flex-wrap items-center justify-between gap-3">
+                <h2 class="panel-title">Candidate intake questions</h2>
+                <form method="POST" action="{{ route('platform.clients.candidate-questions.defaults', $organization) }}">
+                    @csrf
+                    <button type="submit" class="btn-secondary">Load default questions</button>
+                </form>
+            </div>
+            <div class="panel-body space-y-4">
+                <p class="text-sm text-enterprise-600">
+                    Configure the questions candidates answer after a report request is submitted for this client.
+                    Defaults cover legal name, date of birth, phone, aliases, address history, and work history.
+                </p>
+
+                @if ($candidateQuestions->isNotEmpty())
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Question</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Active</th>
+                                    <th>Order</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($candidateQuestions as $question)
+                                    <tr>
+                                        <td class="align-top">
+                                            <form method="POST" action="{{ route('platform.clients.candidate-questions.update', [$organization, $question]) }}" class="space-y-2">
+                                                @csrf
+                                                @method('PATCH')
+                                                <x-text-input name="label" class="block w-full" :value="old('label', $question->label)" required />
+                                                <textarea name="help_text" rows="2" class="block w-full rounded-md border-enterprise-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="Help text (optional)">{{ old('help_text', $question->help_text) }}</textarea>
+                                                <select name="field_type" class="block w-full max-w-xs">
+                                                    @foreach ($questionTypes as $type)
+                                                        <option value="{{ $type->value }}" @selected(old('field_type', $question->field_type->value) === $type->value)>{{ $type->label() }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if ($question->field_type === \App\Enums\CandidateFormQuestionType::Select || old('field_type') === 'select')
+                                                    <textarea name="options_text" rows="3" class="block w-full rounded-md border-enterprise-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="One option per line">{{ old('options_text', implode("\n", $question->optionList())) }}</textarea>
+                                                @else
+                                                    <textarea name="options_text" rows="2" class="block w-full rounded-md border-enterprise-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="Dropdown options (one per line, for dropdown type only)">{{ old('options_text', implode("\n", $question->optionList())) }}</textarea>
+                                                @endif
+                                                <div class="flex flex-wrap items-center gap-4 text-sm">
+                                                    <label class="inline-flex items-center gap-2">
+                                                        <input type="checkbox" name="is_required" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_required', $question->is_required)) />
+                                                        Required
+                                                    </label>
+                                                    <label class="inline-flex items-center gap-2">
+                                                        <input type="checkbox" name="is_active" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_active', $question->is_active)) />
+                                                        Active
+                                                    </label>
+                                                    <x-text-input name="sort_order" type="number" min="0" class="w-24" :value="old('sort_order', $question->sort_order)" />
+                                                    <x-primary-button>Save</x-primary-button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                        <td class="align-top text-enterprise-600">{{ $question->field_type->label() }}</td>
+                                        <td class="align-top text-enterprise-600">{{ $question->is_required ? 'Yes' : 'No' }}</td>
+                                        <td class="align-top text-enterprise-600">{{ $question->is_active ? 'Yes' : 'No' }}</td>
+                                        <td class="align-top text-enterprise-600">{{ $question->sort_order }}</td>
+                                        <td class="align-top text-right">
+                                            <form method="POST" action="{{ route('platform.clients.candidate-questions.destroy', [$organization, $question]) }}" onsubmit="return confirm('Remove this question?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="link-action">Remove</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-sm text-enterprise-500">No questions configured yet. Load defaults or add a custom question below.</p>
+                @endif
+
+                <form method="POST" action="{{ route('platform.clients.candidate-questions.store', $organization) }}" class="space-y-3 rounded-md border border-enterprise-200 p-4">
+                    @csrf
+                    <h3 class="text-sm font-semibold text-enterprise-900">Add question</h3>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        <div>
+                            <x-input-label for="new_question_label" value="Label" />
+                            <x-text-input id="new_question_label" name="label" class="mt-1 block w-full" required />
+                        </div>
+                        <div>
+                            <x-input-label for="new_question_type" value="Type" />
+                            <select id="new_question_type" name="field_type" class="mt-1 block w-full" required>
+                                @foreach ($questionTypes as $type)
+                                    <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <x-input-label for="new_question_help" value="Help text (optional)" />
+                            <x-text-input id="new_question_help" name="help_text" class="mt-1 block w-full" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <x-input-label for="new_question_options" value="Dropdown options (one per line)" />
+                            <textarea id="new_question_options" name="options_text" rows="3" class="mt-1 block w-full rounded-md border-enterprise-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
+                        </div>
+                    </div>
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="is_required" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" checked />
+                        Required
+                    </label>
+                    <div>
+                        <x-primary-button>Add question</x-primary-button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="panel mt-5">
+            <div class="panel-header">
+                <h2 class="panel-title">Compliance &amp; authorization documents</h2>
+            </div>
+            <div class="panel-body space-y-4">
+                <p class="text-sm text-enterprise-600">
+                    Upload authorization forms, FCRA notices, and other compliance documents for this client.
+                    Documents marked for acknowledgment are presented on the candidate intake form. Where else they appear can be decided later.
+                </p>
+
+                @if ($complianceDocuments->isNotEmpty())
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Type</th>
+                                    <th>Ack.</th>
+                                    <th>Active</th>
+                                    <th>File</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($complianceDocuments as $document)
+                                    <tr>
+                                        <td class="align-top">
+                                            <form method="POST" action="{{ route('platform.clients.compliance-documents.update', [$organization, $document]) }}" class="space-y-2">
+                                                @csrf
+                                                @method('PATCH')
+                                                <x-text-input name="name" class="block w-full" :value="old('name', $document->name)" required />
+                                                <textarea name="description" rows="2" class="block w-full rounded-md border-enterprise-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="Description (optional)">{{ old('description', $document->description) }}</textarea>
+                                                <select name="document_type" class="block w-full max-w-xs">
+                                                    @foreach ($documentTypes as $type)
+                                                        <option value="{{ $type->value }}" @selected(old('document_type', $document->document_type->value) === $type->value)>{{ $type->label() }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <div class="flex flex-wrap items-center gap-4 text-sm">
+                                                    <label class="inline-flex items-center gap-2">
+                                                        <input type="checkbox" name="require_acknowledgment" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('require_acknowledgment', $document->require_acknowledgment)) />
+                                                        Require acknowledgment
+                                                    </label>
+                                                    <label class="inline-flex items-center gap-2">
+                                                        <input type="checkbox" name="is_active" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" @checked(old('is_active', $document->is_active)) />
+                                                        Active
+                                                    </label>
+                                                    <x-text-input name="sort_order" type="number" min="0" class="w-24" :value="old('sort_order', $document->sort_order)" />
+                                                    <x-primary-button>Save</x-primary-button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                        <td class="align-top text-enterprise-600">{{ $document->document_type->label() }}</td>
+                                        <td class="align-top text-enterprise-600">{{ $document->require_acknowledgment ? 'Yes' : 'No' }}</td>
+                                        <td class="align-top text-enterprise-600">{{ $document->is_active ? 'Yes' : 'No' }}</td>
+                                        <td class="align-top text-sm text-enterprise-600">
+                                            <a href="{{ route('platform.clients.compliance-documents.download', [$organization, $document]) }}" class="link-action">{{ $document->original_filename }}</a>
+                                            <div>{{ $document->formattedFileSize() }}</div>
+                                        </td>
+                                        <td class="align-top text-right">
+                                            <form method="POST" action="{{ route('platform.clients.compliance-documents.destroy', [$organization, $document]) }}" onsubmit="return confirm('Remove this document?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="link-action">Remove</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-sm text-enterprise-500">No compliance documents uploaded yet.</p>
+                @endif
+
+                <form method="POST" action="{{ route('platform.clients.compliance-documents.store', $organization) }}" enctype="multipart/form-data" class="space-y-3 rounded-md border border-enterprise-200 p-4">
+                    @csrf
+                    <h3 class="text-sm font-semibold text-enterprise-900">Upload document</h3>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        <div>
+                            <x-input-label for="document_name" value="Display name" />
+                            <x-text-input id="document_name" name="name" class="mt-1 block w-full" required />
+                        </div>
+                        <div>
+                            <x-input-label for="document_type" value="Document type" />
+                            <select id="document_type" name="document_type" class="mt-1 block w-full" required>
+                                @foreach ($documentTypes as $type)
+                                    <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <x-input-label for="document_description" value="Description (optional)" />
+                            <x-text-input id="document_description" name="description" class="mt-1 block w-full" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <x-input-label for="document_file" value="File (PDF, Word, image, or text — max 10MB)" />
+                            <input id="document_file" name="document" type="file" class="mt-1 block w-full text-sm" required />
+                            <x-input-error :messages="$errors->get('document')" class="mt-2" />
+                        </div>
+                    </div>
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="require_acknowledgment" value="1" class="rounded border-enterprise-300 text-brand-600 focus:ring-brand-500" checked />
+                        Require candidate acknowledgment on intake form
+                    </label>
+                    <div>
+                        <x-primary-button>Upload document</x-primary-button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 </x-app-layout>

@@ -40,6 +40,48 @@
                     </div>
                 </div>
                 <div>
+                    <div class="meta-label">Candidate email</div>
+                    <div class="meta-value">{{ $reportRequest->candidate_email ?? '—' }}</div>
+                </div>
+                @if ($reportRequest->candidate_phone)
+                    <div>
+                        <div class="meta-label">Candidate phone</div>
+                        <div class="meta-value">{{ $reportRequest->candidate_phone }}</div>
+                    </div>
+                @endif
+                <div>
+                    <div class="meta-label">Invite sent</div>
+                    <div class="meta-value">{{ $reportRequest->invite_sent_at?->format('M j, Y g:i A') ?? '—' }}</div>
+                </div>
+                @if ($reportRequest->isAwaitingCandidate() && $reportRequest->inviteExpiresAt())
+                    <div>
+                        <div class="meta-label">Invite expires</div>
+                        <div class="meta-value">
+                            {{ $reportRequest->inviteExpiresAt()->format('M j, Y g:i A') }}
+                            @if ($reportRequest->isInviteExpired())
+                                <span class="badge badge-muted ml-2">Expired</span>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+                <div>
+                    <div class="meta-label">Candidate completed</div>
+                    <div class="meta-value">{{ $reportRequest->candidate_completed_at?->format('M j, Y g:i A') ?? 'Not yet' }}</div>
+                </div>
+                <div>
+                    <div class="meta-label">Authorization accepted</div>
+                    <div class="meta-value">
+                        @if ($reportRequest->authorization_accepted_at)
+                            {{ $reportRequest->authorization_accepted_at->format('M j, Y g:i A') }}
+                            @if ($reportRequest->authorization_ip)
+                                <div class="text-xs text-enterprise-500">IP {{ $reportRequest->authorization_ip }}</div>
+                            @endif
+                        @else
+                            Not yet
+                        @endif
+                    </div>
+                </div>
+                <div>
                     <div class="meta-label">Review required</div>
                     <div class="meta-value">{{ $reportRequest->requires_review ? 'Yes' : 'No (auto-submitted)' }}</div>
                 </div>
@@ -83,7 +125,35 @@
         </div>
     </div>
 
-    @if ($canManage && $reportRequest->requires_review && ! in_array($reportRequest->status, [\App\Enums\ReportRequestStatus::Submitted, \App\Enums\ReportRequestStatus::Rejected, \App\Enums\ReportRequestStatus::Cancelled], true))
+    @if ($reportRequest->candidateHasCompleted())
+        <div class="panel mt-5">
+            <div class="panel-header"><h2 class="panel-title">Candidate intake responses</h2></div>
+            <div class="panel-body space-y-4">
+                @forelse (($reportRequest->candidate_answers ?? []) as $key => $answer)
+                    <div>
+                        <div class="meta-label">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
+                        <div class="meta-value text-sm text-enterprise-700">
+                            @if (is_array($answer))
+                                <pre class="whitespace-pre-wrap font-sans text-sm">{{ json_encode($answer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                            @else
+                                {{ $answer ?: '—' }}
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-enterprise-500">No answers recorded.</p>
+                @endforelse
+            </div>
+        </div>
+    @elseif ($reportRequest->isAwaitingCandidate())
+        <div class="panel mt-5">
+            <div class="panel-body text-sm text-enterprise-600">
+                Waiting for the candidate to complete the intake form and authorize the screening. Review actions are unavailable until intake is complete.
+            </div>
+        </div>
+    @endif
+
+    @if ($canManage && $reportRequest->requires_review && ! $reportRequest->isAwaitingCandidate() && ! in_array($reportRequest->status, [\App\Enums\ReportRequestStatus::Submitted, \App\Enums\ReportRequestStatus::Rejected, \App\Enums\ReportRequestStatus::Cancelled], true))
         <div class="mt-5 grid gap-5 lg:grid-cols-3">
             <div class="panel">
                 <div class="panel-header"><h2 class="panel-title">Assign reviewer</h2></div>

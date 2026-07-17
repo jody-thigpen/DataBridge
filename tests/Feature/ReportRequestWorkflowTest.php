@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrganizationRole;
 use App\Enums\PlatformRole;
 use App\Enums\ReportRequestStatus;
+use App\Mail\CandidateIntakeInvitation;
 use App\Models\Organization;
 use App\Models\OrganizationSearchTypeSetting;
 use App\Models\ReportRequest;
@@ -12,10 +13,12 @@ use App\Models\SavedReportRequestFilter;
 use App\Models\ScreeningPackage;
 use App\Models\SearchType;
 use App\Models\User;
+use App\Services\CandidateFormQuestionDefaults;
 use Database\Seeders\InformDataDataSourceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SearchTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ReportRequestWorkflowTest extends TestCase
@@ -29,9 +32,10 @@ class ReportRequestWorkflowTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(InformDataDataSourceSeeder::class);
         $this->seed(SearchTypeSeeder::class);
+        Mail::fake();
     }
 
-    public function test_client_request_requiring_review_is_queued_for_saffhire(): void
+    public function test_client_request_emails_candidate_and_awaits_intake(): void
     {
         [$organization, $package, $user] = $this->clientContext();
 
@@ -43,6 +47,7 @@ class ReportRequestWorkflowTest extends TestCase
         $this->actingAs($user)
             ->post(route('reports.requests.store'), [
                 'subject_name' => 'Jane Candidate',
+                'candidate_email' => 'jane@example.test',
                 'screening_package_id' => $package->id,
                 'notes' => 'Urgent hire',
             ])
@@ -52,11 +57,41 @@ class ReportRequestWorkflowTest extends TestCase
 
         $this->assertNotNull($request);
         $this->assertTrue($request->requires_review);
-        $this->assertSame(ReportRequestStatus::PendingReview, $request->status);
+        $this->assertSame(ReportRequestStatus::AwaitingCandidate, $request->status);
+        $this->assertSame('jane@example.test', $request->candidate_email);
+        $this->assertNotNull($request->invite_token);
         $this->assertNull($request->submitted_at);
+
+        Mail::assertSent(CandidateIntakeInvitation::class, function (CandidateIntakeInvitation $mail) {
+            return $mail->hasTo('jane@example.test');
+        });
     }
 
-    public function test_client_request_with_auto_submit_search_is_submitted_immediately(): void
+    public function test_candidate_completion_moves_reviewable_request_to_pending_review(): void
+    {
+        [$organization, $package, $user] = $this->clientContext();
+        $package->searchTypes()->firstOrFail()->update(['requires_review_before_submit' => true]);
+        app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
+
+        session(['organization_id' => $organization->id]);
+        $this->actingAs($user)->post(route('reports.requests.store'), [
+            'subject_name' => 'Jane Candidate',
+            'candidate_email' => 'jane@example.test',
+            'screening_package_id' => $package->id,
+        ]);
+
+        $reportRequest = ReportRequest::query()->firstOrFail();
+        $this->completeCandidateIntake($reportRequest);
+
+        $reportRequest->refresh();
+
+        $this->assertSame(ReportRequestStatus::PendingReview, $reportRequest->status);
+        $this->assertNotNull($reportRequest->candidate_completed_at);
+        $this->assertNotNull($reportRequest->authorization_accepted_at);
+        $this->assertNull($reportRequest->invite_token);
+    }
+
+    public function test_candidate_completion_auto_submits_when_review_not_required(): void
     {
         [$organization, $package, $user] = $this->clientContext();
 
@@ -64,23 +99,27 @@ class ReportRequestWorkflowTest extends TestCase
             $searchType->update(['requires_review_before_submit' => false]);
         }
 
+        app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
+
         session(['organization_id' => $organization->id]);
+        $this->actingAs($user)->post(route('reports.requests.store'), [
+            'subject_name' => 'John Candidate',
+            'candidate_email' => 'john@example.test',
+            'screening_package_id' => $package->id,
+        ]);
 
-        $this->actingAs($user)
-            ->post(route('reports.requests.store'), [
-                'subject_name' => 'John Candidate',
-                'screening_package_id' => $package->id,
-            ])
-            ->assertRedirect(route('reports.index'));
+        $reportRequest = ReportRequest::query()->firstOrFail();
+        $this->assertSame(ReportRequestStatus::AwaitingCandidate, $reportRequest->status);
 
-        $request = ReportRequest::query()->first();
+        $this->completeCandidateIntake($reportRequest);
+        $reportRequest->refresh();
 
-        $this->assertFalse($request->requires_review);
-        $this->assertSame(ReportRequestStatus::Submitted, $request->status);
-        $this->assertNotNull($request->submitted_at);
+        $this->assertFalse($reportRequest->requires_review);
+        $this->assertSame(ReportRequestStatus::Submitted, $reportRequest->status);
+        $this->assertNotNull($reportRequest->submitted_at);
     }
 
-    public function test_client_override_can_force_auto_submit_for_reviewable_search(): void
+    public function test_client_override_can_force_auto_submit_after_candidate_intake(): void
     {
         [$organization, $package, $user] = $this->clientContext();
 
@@ -93,19 +132,21 @@ class ReportRequestWorkflowTest extends TestCase
             'requires_review_before_submit' => false,
         ]);
 
+        app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
+
         session(['organization_id' => $organization->id]);
+        $this->actingAs($user)->post(route('reports.requests.store'), [
+            'subject_name' => 'Alex Candidate',
+            'candidate_email' => 'alex@example.test',
+            'screening_package_id' => $package->id,
+        ]);
 
-        $this->actingAs($user)
-            ->post(route('reports.requests.store'), [
-                'subject_name' => 'Alex Candidate',
-                'screening_package_id' => $package->id,
-            ])
-            ->assertRedirect(route('reports.index'));
+        $reportRequest = ReportRequest::query()->firstOrFail();
+        $this->completeCandidateIntake($reportRequest);
+        $reportRequest->refresh();
 
-        $request = ReportRequest::query()->first();
-
-        $this->assertFalse($request->requires_review);
-        $this->assertSame(ReportRequestStatus::Submitted, $request->status);
+        $this->assertFalse($reportRequest->requires_review);
+        $this->assertSame(ReportRequestStatus::Submitted, $reportRequest->status);
     }
 
     public function test_platform_operations_user_can_filter_and_assign_report_request(): void
@@ -113,15 +154,19 @@ class ReportRequestWorkflowTest extends TestCase
         [$organization, $package, $user] = $this->clientContext();
         $searchType = $package->searchTypes()->firstOrFail();
         $searchType->update(['requires_review_before_submit' => true]);
+        app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
 
         session(['organization_id' => $organization->id]);
 
         $this->actingAs($user)->post(route('reports.requests.store'), [
             'subject_name' => 'Taylor Candidate',
+            'candidate_email' => 'taylor@example.test',
             'screening_package_id' => $package->id,
         ]);
 
         $reportRequest = ReportRequest::query()->firstOrFail();
+        $this->completeCandidateIntake($reportRequest);
+
         $operationsUser = User::factory()->create(['email_verified_at' => now()]);
         $operationsUser->assignRole(PlatformRole::Operations);
         $reviewer = User::factory()->create(['email_verified_at' => now(), 'name' => 'Ops Reviewer']);
@@ -149,14 +194,18 @@ class ReportRequestWorkflowTest extends TestCase
     {
         [$organization, $package, $user] = $this->clientContext();
         $package->searchTypes()->firstOrFail()->update(['requires_review_before_submit' => true]);
+        app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
 
         session(['organization_id' => $organization->id]);
         $this->actingAs($user)->post(route('reports.requests.store'), [
             'subject_name' => 'Sam Candidate',
+            'candidate_email' => 'sam@example.test',
             'screening_package_id' => $package->id,
         ]);
 
         $reportRequest = ReportRequest::query()->firstOrFail();
+        $this->completeCandidateIntake($reportRequest);
+
         $admin = User::factory()->create(['email_verified_at' => now()]);
         $admin->assignRole(PlatformRole::Admin);
 
@@ -173,6 +222,95 @@ class ReportRequestWorkflowTest extends TestCase
         $this->assertSame('Looks good', $reportRequest->review_notes);
     }
 
+    public function test_platform_cannot_approve_while_awaiting_candidate(): void
+    {
+        [$organization, $package, $user] = $this->clientContext();
+        $package->searchTypes()->firstOrFail()->update(['requires_review_before_submit' => true]);
+
+        session(['organization_id' => $organization->id]);
+        $this->actingAs($user)->post(route('reports.requests.store'), [
+            'subject_name' => 'Sam Candidate',
+            'candidate_email' => 'sam@example.test',
+            'screening_package_id' => $package->id,
+        ]);
+
+        $reportRequest = ReportRequest::query()->firstOrFail();
+        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $this->actingAs($admin)
+            ->patch(route('platform.report-requests.approve', $reportRequest), [
+                'review_notes' => 'Too early',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_expired_invite_link_requires_client_resend(): void
+    {
+        [$organization, $package, $user] = $this->clientContext();
+        app(CandidateFormQuestionDefaults::class)->seedForOrganization($organization);
+
+        session(['organization_id' => $organization->id]);
+        $this->actingAs($user)->post(route('reports.requests.store'), [
+            'subject_name' => 'Expired Candidate',
+            'candidate_email' => 'expired@example.test',
+            'screening_package_id' => $package->id,
+        ]);
+
+        $reportRequest = ReportRequest::query()->firstOrFail();
+        $expiredToken = $reportRequest->invite_token;
+
+        $reportRequest->forceFill([
+            'invite_sent_at' => now()->subDays(4),
+        ])->save();
+
+        $this->get(route('candidate.intake.show', $expiredToken))
+            ->assertOk()
+            ->assertSee('This link has expired')
+            ->assertSee('resend your invitation');
+
+        $this->post(route('candidate.intake.store', $expiredToken), [
+            'answers' => [
+                'legal_name' => 'Expired Candidate',
+                'date_of_birth' => '1990-01-15',
+                'mobile_phone' => '555-0100',
+                'other_names' => '',
+                'address_history' => [[
+                    'line1' => '123 Main St',
+                    'line2' => '',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'postal' => '78701',
+                    'from' => '2020-01',
+                    'to' => '',
+                ]],
+                'work_history' => [[
+                    'employer' => 'Acme Corp',
+                    'title' => 'Analyst',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'from' => '2021-03',
+                    'to' => '',
+                    'reason_for_leaving' => '',
+                ]],
+            ],
+            'authorization_accepted' => '1',
+        ])->assertStatus(410);
+
+        session(['organization_id' => $organization->id]);
+        $this->actingAs($user)
+            ->post(route('reports.requests.resend-invite', $reportRequest))
+            ->assertRedirect();
+
+        $reportRequest->refresh();
+        $this->assertNotSame($expiredToken, $reportRequest->invite_token);
+        $this->assertFalse($reportRequest->isInviteExpired());
+
+        $this->completeCandidateIntake($reportRequest);
+        $reportRequest->refresh();
+        $this->assertNotNull($reportRequest->candidate_completed_at);
+    }
+
     public function test_platform_user_can_save_and_delete_report_request_filter_sets(): void
     {
         [$organization, $package, $user] = $this->clientContext();
@@ -180,6 +318,7 @@ class ReportRequestWorkflowTest extends TestCase
         session(['organization_id' => $organization->id]);
         $this->actingAs($user)->post(route('reports.requests.store'), [
             'subject_name' => 'Taylor Candidate',
+            'candidate_email' => 'taylor@example.test',
             'screening_package_id' => $package->id,
         ]);
 
@@ -188,13 +327,13 @@ class ReportRequestWorkflowTest extends TestCase
 
         $filterParams = [
             'organization_id' => $organization->id,
-            'status' => ReportRequestStatus::PendingReview->value,
+            'status' => ReportRequestStatus::AwaitingCandidate->value,
             'q' => 'Taylor',
         ];
 
         $this->actingAs($operationsUser)
             ->post(route('platform.report-requests.filters.store'), [
-                'name' => 'Pending Taylor requests',
+                'name' => 'Awaiting Taylor intake',
                 ...$filterParams,
             ])
             ->assertRedirect(route('platform.report-requests.index', $filterParams))
@@ -202,7 +341,7 @@ class ReportRequestWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('saved_report_request_filters', [
             'user_id' => $operationsUser->id,
-            'name' => 'Pending Taylor requests',
+            'name' => 'Awaiting Taylor intake',
         ]);
 
         $savedFilter = $operationsUser->savedReportRequestFilters()->firstOrFail();
@@ -215,7 +354,7 @@ class ReportRequestWorkflowTest extends TestCase
             ->get(route('platform.report-requests.index', $savedFilter->filters))
             ->assertOk()
             ->assertSee('Taylor Candidate')
-            ->assertSee('Pending Taylor requests');
+            ->assertSee('Awaiting Taylor intake');
 
         $this->actingAs($operationsUser)
             ->delete(route('platform.report-requests.filters.destroy', $savedFilter), $filterParams)
@@ -247,6 +386,40 @@ class ReportRequestWorkflowTest extends TestCase
         $this->assertDatabaseHas('saved_report_request_filters', ['id' => $savedFilter->id]);
     }
 
+    private function completeCandidateIntake(ReportRequest $reportRequest): void
+    {
+        $token = $reportRequest->invite_token;
+        $this->assertNotNull($token);
+
+        $this->post(route('candidate.intake.store', $token), [
+            'answers' => [
+                'legal_name' => $reportRequest->subject_name,
+                'date_of_birth' => '1990-01-15',
+                'mobile_phone' => '555-0100',
+                'other_names' => '',
+                'address_history' => [[
+                    'line1' => '123 Main St',
+                    'line2' => '',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'postal' => '78701',
+                    'from' => '2020-01',
+                    'to' => '',
+                ]],
+                'work_history' => [[
+                    'employer' => 'Acme Corp',
+                    'title' => 'Analyst',
+                    'city' => 'Austin',
+                    'state' => 'TX',
+                    'from' => '2021-03',
+                    'to' => '',
+                    'reason_for_leaving' => '',
+                ]],
+            ],
+            'authorization_accepted' => '1',
+        ])->assertRedirect(route('candidate.intake.thanks'));
+    }
+
     /**
      * @return array{0: Organization, 1: ScreeningPackage, 2: User}
      */
@@ -269,7 +442,7 @@ class ReportRequestWorkflowTest extends TestCase
         $package->syncSearchItems([
             ['search_type_id' => $searchType->id, 'data_source_id' => $searchType->data_source_id],
         ]);
-        $organization->screeningPackages()->attach($package->id);
+        $organization->screeningPackages()->attach($package->id, ['tenant_id' => $organization->tenant_id]);
 
         return [$organization, $package->fresh(['searchTypes']), $user];
     }

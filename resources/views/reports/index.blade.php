@@ -19,10 +19,12 @@
                     <tr>
                         <th>Requested</th>
                         <th>Subject</th>
+                        <th>Candidate email</th>
                         <th>Package</th>
                         <th>Price</th>
                         <th>Status</th>
                         <th>Assigned to</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,6 +32,7 @@
                         <tr>
                             <td class="text-enterprise-600">{{ $reportRequest->created_at->format('M j, Y g:i A') }}</td>
                             <td class="font-medium text-enterprise-900">{{ $reportRequest->subject_name }}</td>
+                            <td class="text-enterprise-600">{{ $reportRequest->candidate_email ?? '—' }}</td>
                             <td class="text-enterprise-600">{{ $reportRequest->screeningPackage->name }}</td>
                             <td class="text-enterprise-600">{{ $reportRequest->formattedPrice() }}</td>
                             <td>
@@ -38,10 +41,27 @@
                                 </span>
                             </td>
                             <td class="text-enterprise-600">{{ $reportRequest->assignedTo?->name ?? '—' }}</td>
+                            <td class="text-right space-y-1">
+                                @if ($canCreate && $reportRequest->isAwaitingCandidate())
+                                    @if ($reportRequest->isInviteExpired())
+                                        <div class="text-xs text-red-600">Invite expired</div>
+                                    @elseif ($reportRequest->inviteExpiresAt())
+                                        <div class="text-xs text-enterprise-500">
+                                            Expires {{ $reportRequest->inviteExpiresAt()->format('M j, Y') }}
+                                        </div>
+                                    @endif
+                                    <form method="POST" action="{{ route('reports.requests.resend-invite', $reportRequest) }}">
+                                        @csrf
+                                        <button type="submit" class="link-action">
+                                            {{ $reportRequest->isInviteExpired() ? 'Resend expired invite' : 'Resend invite' }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-10 text-center text-enterprise-500">No report requests submitted yet.</td>
+                            <td colspan="8" class="py-10 text-center text-enterprise-500">No report requests submitted yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\CandidateIntakeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationSwitchController;
+use App\Http\Controllers\Platform\CandidateFormQuestionController;
 use App\Http\Controllers\Platform\ClientController;
+use App\Http\Controllers\Platform\ComplianceDocumentController;
 use App\Http\Controllers\Platform\DataSourceController;
 use App\Http\Controllers\Platform\ImpersonationController;
 use App\Http\Controllers\Platform\OrganizationPackagePriceController;
@@ -20,6 +23,12 @@ use App\Http\Controllers\ReportRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
+
+Route::get('/candidate/intake/thanks', [CandidateIntakeController::class, 'thanks'])->name('candidate.intake.thanks');
+Route::get('/candidate/intake/{token}', [CandidateIntakeController::class, 'show'])->name('candidate.intake.show');
+Route::post('/candidate/intake/{token}', [CandidateIntakeController::class, 'store'])->name('candidate.intake.store');
+Route::get('/candidate/intake/{token}/documents/{complianceDocument}', [CandidateIntakeController::class, 'downloadDocument'])
+    ->name('candidate.intake.documents.download');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -43,6 +52,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/clients/{organization}/package-prices', [OrganizationPackagePriceController::class, 'update'])->name('clients.package-prices.update');
         Route::patch('/clients/{organization}/search-review-settings', [OrganizationSearchTypeSettingController::class, 'update'])->name('clients.search-review-settings.update');
         Route::patch('/clients/{organization}/client-manager', [ClientController::class, 'updateClientManager'])->name('clients.client-manager.update');
+        Route::post('/clients/{organization}/candidate-questions', [CandidateFormQuestionController::class, 'store'])->name('clients.candidate-questions.store');
+        Route::post('/clients/{organization}/candidate-questions/defaults', [CandidateFormQuestionController::class, 'seedDefaults'])->name('clients.candidate-questions.defaults');
+        Route::patch('/clients/{organization}/candidate-questions/{candidateFormQuestion}', [CandidateFormQuestionController::class, 'update'])->name('clients.candidate-questions.update');
+        Route::delete('/clients/{organization}/candidate-questions/{candidateFormQuestion}', [CandidateFormQuestionController::class, 'destroy'])->name('clients.candidate-questions.destroy');
+        Route::post('/clients/{organization}/compliance-documents', [ComplianceDocumentController::class, 'store'])->name('clients.compliance-documents.store');
+        Route::patch('/clients/{organization}/compliance-documents/{complianceDocument}', [ComplianceDocumentController::class, 'update'])->name('clients.compliance-documents.update');
+        Route::delete('/clients/{organization}/compliance-documents/{complianceDocument}', [ComplianceDocumentController::class, 'destroy'])->name('clients.compliance-documents.destroy');
+        Route::get('/clients/{organization}/compliance-documents/{complianceDocument}/download', [ComplianceDocumentController::class, 'download'])->name('clients.compliance-documents.download');
 
         Route::get('/report-requests', [PlatformReportRequestController::class, 'index'])->name('report-requests.index');
         Route::post('/report-requests/filters', [PlatformReportRequestController::class, 'storeFilter'])->name('report-requests.filters.store');
@@ -89,6 +106,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/requests/create', [ReportRequestController::class, 'create'])->name('reports.requests.create');
         Route::post('/reports/requests', [ReportRequestController::class, 'store'])->name('reports.requests.store');
+        Route::post('/reports/requests/{reportRequest}/resend-invite', [ReportRequestController::class, 'resendInvite'])->name('reports.requests.resend-invite');
 
         Route::get('/organization/profile', [OrganizationProfileController::class, 'edit'])->name('organization.profile.edit');
         Route::patch('/organization/profile', [OrganizationProfileController::class, 'update'])->name('organization.profile.update');

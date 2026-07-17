@@ -113,6 +113,7 @@ class ReportRequestController extends Controller
     {
         abort_unless($this->canManage($request->user()), 403);
         abort_unless($reportRequest->requires_review, 403);
+        abort_if($reportRequest->status === ReportRequestStatus::AwaitingCandidate, 403);
         abort_if(in_array($reportRequest->status, [ReportRequestStatus::Submitted, ReportRequestStatus::Rejected, ReportRequestStatus::Cancelled], true), 403);
 
         $assigneeIds = $this->platformAssignees()->pluck('id');
@@ -134,6 +135,7 @@ class ReportRequestController extends Controller
     {
         abort_unless($this->canManage($request->user()), 403);
         abort_unless($reportRequest->requires_review, 403);
+        abort_if($reportRequest->status === ReportRequestStatus::AwaitingCandidate, 403);
         abort_if(in_array($reportRequest->status, [ReportRequestStatus::Submitted, ReportRequestStatus::Rejected, ReportRequestStatus::Cancelled], true), 403);
 
         $validated = $request->validate([
@@ -155,6 +157,7 @@ class ReportRequestController extends Controller
     {
         abort_unless($this->canManage($request->user()), 403);
         abort_unless($reportRequest->requires_review, 403);
+        abort_if($reportRequest->status === ReportRequestStatus::AwaitingCandidate, 403);
         abort_if(in_array($reportRequest->status, [ReportRequestStatus::Submitted, ReportRequestStatus::Rejected, ReportRequestStatus::Cancelled], true), 403);
 
         $validated = $request->validate([

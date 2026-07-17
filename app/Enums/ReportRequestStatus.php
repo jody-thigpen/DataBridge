@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum ReportRequestStatus: string
 {
+    case AwaitingCandidate = 'awaiting_candidate';
     case PendingReview = 'pending_review';
     case Assigned = 'assigned';
     case Approved = 'approved';
@@ -14,6 +15,7 @@ enum ReportRequestStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::AwaitingCandidate => 'Awaiting candidate',
             self::PendingReview => 'Pending review',
             self::Assigned => 'Assigned',
             self::Approved => 'Approved',
@@ -26,6 +28,7 @@ enum ReportRequestStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
+            self::AwaitingCandidate => 'badge',
             self::PendingReview => 'badge-muted',
             self::Assigned => 'badge',
             self::Approved => 'badge-success',

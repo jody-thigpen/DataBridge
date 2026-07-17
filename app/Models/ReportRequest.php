@@ -20,6 +20,17 @@ class ReportRequest extends Model
         'assigned_to_user_id',
         'reviewed_by_user_id',
         'subject_name',
+        'candidate_email',
+        'candidate_phone',
+        'invite_token',
+        'invite_sent_at',
+        'candidate_opened_at',
+        'candidate_completed_at',
+        'authorization_accepted_at',
+        'authorization_ip',
+        'authorization_user_agent',
+        'candidate_answers',
+        'acknowledged_document_ids',
         'notes',
         'price',
         'status',
@@ -39,6 +50,12 @@ class ReportRequest extends Model
             'assigned_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'invite_sent_at' => 'datetime',
+            'candidate_opened_at' => 'datetime',
+            'candidate_completed_at' => 'datetime',
+            'authorization_accepted_at' => 'datetime',
+            'candidate_answers' => 'array',
+            'acknowledged_document_ids' => 'array',
         ];
     }
 
@@ -70,6 +87,39 @@ class ReportRequest extends Model
     public function formattedPrice(): string
     {
         return '$'.number_format((float) $this->price, 2);
+    }
+
+    public function isAwaitingCandidate(): bool
+    {
+        return $this->status === ReportRequestStatus::AwaitingCandidate;
+    }
+
+    public function candidateHasCompleted(): bool
+    {
+        return $this->candidate_completed_at !== null;
+    }
+
+    public function inviteExpiresAt(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->invite_sent_at === null) {
+            return null;
+        }
+
+        return $this->invite_sent_at->copy()->addDays(config('candidate_intake.invite_ttl_days', 3));
+    }
+
+    public function isInviteExpired(): bool
+    {
+        $expiresAt = $this->inviteExpiresAt();
+
+        return $expiresAt !== null && $expiresAt->isPast();
+    }
+
+    public function isInviteActive(): bool
+    {
+        return $this->isAwaitingCandidate()
+            && filled($this->invite_token)
+            && ! $this->isInviteExpired();
     }
 
     public function scopeForOrganization(Builder $query, Organization $organization): Builder
@@ -114,6 +164,7 @@ class ReportRequest extends Model
             $term = '%'.$filters['q'].'%';
             $query->where(function (Builder $search) use ($term): void {
                 $search->where('subject_name', 'like', $term)
+                    ->orWhere('candidate_email', 'like', $term)
                     ->orWhere('notes', 'like', $term)
                     ->orWhereHas('organization', fn (Builder $org) => $org->where('name', 'like', $term))
                     ->orWhereHas('screeningPackage', fn (Builder $package) => $package->where('name', 'like', $term))
@@ -133,6 +184,7 @@ class ReportRequest extends Model
             ->where('requires_review', true)
             ->where('assigned_to_user_id', $userId)
             ->whereNotIn('status', [
+                ReportRequestStatus::AwaitingCandidate,
                 ReportRequestStatus::Submitted,
                 ReportRequestStatus::Rejected,
                 ReportRequestStatus::Cancelled,
