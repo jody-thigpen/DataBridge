@@ -6,8 +6,8 @@
         />
     </x-slot>
 
-    <div class="grid gap-5 lg:grid-cols-3">
-        <div class="panel lg:col-span-2">
+    <div class="space-y-5">
+        <div class="panel min-w-0">
             <div class="panel-header">
                 <h2 class="panel-title">Team members</h2>
             </div>
@@ -53,7 +53,7 @@
         </div>
 
         @if ($canAddUsers)
-            <div class="panel">
+            <div class="panel max-w-xl">
                 <div class="panel-header">
                     <h2 class="panel-title">Add team member</h2>
                 </div>

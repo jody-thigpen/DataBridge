@@ -6,8 +6,8 @@
         />
     </x-slot>
 
-    <div class="grid gap-5 lg:grid-cols-3">
-        <div class="panel lg:col-span-2">
+    <div class="space-y-5">
+        <div class="panel min-w-0">
             <div class="panel-header">
                 <h2 class="panel-title">Current staff accounts</h2>
             </div>
@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <div class="panel">
+        <div class="panel max-w-xl">
             @if ($canManageUsers)
                 <div class="panel-header">
                     <h2 class="panel-title">Add platform user</h2>

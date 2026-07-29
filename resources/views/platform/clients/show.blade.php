@@ -12,7 +12,7 @@
     </x-slot>
 
     <div class="grid gap-5 lg:grid-cols-3">
-        <div class="panel lg:col-span-1">
+        <div class="panel">
             <div class="panel-header">
                 <h2 class="panel-title">Organization details</h2>
             </div>
@@ -50,52 +50,8 @@
             </div>
         </div>
 
-        <div @class(['panel', 'lg:col-span-2' => ! $canManageClients, 'lg:col-span-1' => $canManageClients])>
-            <div class="panel-header">
-                <h2 class="panel-title">Assigned users</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Created</th>
-                            <th>Last login</th>
-                            <th class="text-right">Support</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($organization->roleAssignments as $assignment)
-                            <tr>
-                                <td class="font-medium text-enterprise-900">{{ $assignment->user->name }}</td>
-                                <td class="text-enterprise-600">{{ $assignment->user->email }}</td>
-                                <td class="text-enterprise-600">{{ $assignment->role->name }}</td>
-                                <td class="text-enterprise-600 whitespace-nowrap">{{ $assignment->user->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
-                                <td class="text-enterprise-600 whitespace-nowrap">{{ $assignment->user->last_login_at?->format('M j, Y g:i A') ?? '—' }}</td>
-                                <td class="text-right space-x-3">
-                                    @if ($canManageClients)
-                                        <a href="{{ route('platform.clients.users.edit', [$organization, $assignment->user]) }}" class="link-action">Edit</a>
-                                    @endif
-                                    <form method="POST" action="{{ route('platform.impersonation.store', $assignment->user) }}" class="inline">
-                                        @csrf
-                                        <button type="submit" class="link-action">Start support session</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="py-10 text-center text-enterprise-500">No users assigned to this organization.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
         @if ($canManageClients)
-            <div class="panel lg:col-span-1">
+            <div class="panel lg:col-span-2">
                 <div class="panel-header">
                     <h2 class="panel-title">Add team member</h2>
                 </div>
@@ -132,6 +88,50 @@
                 </form>
             </div>
         @endif
+    </div>
+
+    <div class="panel mt-5 min-w-0">
+        <div class="panel-header">
+            <h2 class="panel-title">Assigned users</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Last login</th>
+                        <th class="text-right">Support</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($organization->roleAssignments as $assignment)
+                        <tr>
+                            <td class="font-medium text-enterprise-900">{{ $assignment->user->name }}</td>
+                            <td class="text-enterprise-600">{{ $assignment->user->email }}</td>
+                            <td class="text-enterprise-600">{{ $assignment->role->name }}</td>
+                            <td class="text-enterprise-600 whitespace-nowrap">{{ $assignment->user->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                            <td class="text-enterprise-600 whitespace-nowrap">{{ $assignment->user->last_login_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                            <td class="text-right space-x-3 whitespace-nowrap">
+                                @if ($canManageClients)
+                                    <a href="{{ route('platform.clients.users.edit', [$organization, $assignment->user]) }}" class="link-action">Edit</a>
+                                @endif
+                                <form method="POST" action="{{ route('platform.impersonation.store', $assignment->user) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="link-action">Start support session</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-10 text-center text-enterprise-500">No users assigned to this organization.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     @if ($canManageClients)

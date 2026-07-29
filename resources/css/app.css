@@ -100,7 +100,7 @@
     }
 
     .data-table {
-        @apply min-w-full text-sm;
+        @apply w-max min-w-full text-sm;
     }
 
     .data-table thead {
