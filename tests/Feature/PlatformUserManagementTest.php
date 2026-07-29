@@ -213,6 +213,54 @@ class PlatformUserManagementTest extends TestCase
         $this->assertTrue($employee->hasOrganizationRole(OrganizationRole::HrManager, $organization));
     }
 
+    public function test_platform_and_organization_user_lists_show_created_and_last_login(): void
+    {
+        $createdAt = now()->subDays(3)->startOfMinute();
+        $lastLoginAt = now()->subDay()->startOfMinute();
+
+        $admin = User::factory()->create([
+            'email_verified_at' => now(),
+            'created_at' => $createdAt,
+            'last_login_at' => $lastLoginAt,
+        ]);
+        $admin->assignRole(PlatformRole::Admin);
+
+        $this->actingAs($admin)
+            ->get(route('platform.users.index'))
+            ->assertOk()
+            ->assertSee('Created')
+            ->assertSee('Last login')
+            ->assertSee($createdAt->format('M j, Y g:i A'))
+            ->assertSee($lastLoginAt->format('M j, Y g:i A'));
+
+        $organization = Organization::query()->create(['name' => 'Client Co', 'slug' => 'client-co']);
+
+        $clientAdmin = User::factory()->create([
+            'email_verified_at' => now(),
+            'current_organization_id' => $organization->id,
+            'created_at' => $createdAt,
+            'last_login_at' => null,
+        ]);
+        $clientAdmin->assignRole(OrganizationRole::ClientAdmin, $organization);
+
+        session(['organization_id' => $organization->id]);
+
+        $this->actingAs($clientAdmin)
+            ->get(route('organization.users.index'))
+            ->assertOk()
+            ->assertSee('Created')
+            ->assertSee('Last login')
+            ->assertSee($createdAt->format('M j, Y g:i A'))
+            ->assertSee('—', false);
+
+        $this->actingAs($admin)
+            ->get(route('platform.clients.show', $organization))
+            ->assertOk()
+            ->assertSee('Created')
+            ->assertSee('Last login')
+            ->assertSee($createdAt->format('M j, Y g:i A'));
+    }
+
     public function test_sync_platform_role_replaces_existing_platform_assignment(): void
     {
         $user = User::factory()->create();

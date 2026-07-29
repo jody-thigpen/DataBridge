@@ -59,13 +59,17 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        if (! Auth::user()?->isActiveAccount()) {
+        $user = Auth::user();
+
+        if (! $user?->isActiveAccount()) {
             Auth::logout();
 
             throw ValidationException::withMessages([
                 'email' => 'This account is inactive. Contact support for this organization.',
             ]);
         }
+
+        $user->forceFill(['last_login_at' => now()])->save();
 
         RateLimiter::clear($this->throttleKey());
     }

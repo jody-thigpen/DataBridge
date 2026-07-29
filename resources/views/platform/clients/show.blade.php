@@ -61,6 +61,8 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Created</th>
+                            <th>Last login</th>
                             <th class="text-right">Support</th>
                         </tr>
                     </thead>
@@ -70,6 +72,8 @@
                                 <td class="font-medium text-enterprise-900">{{ $assignment->user->name }}</td>
                                 <td class="text-enterprise-600">{{ $assignment->user->email }}</td>
                                 <td class="text-enterprise-600">{{ $assignment->role->name }}</td>
+                                <td class="text-enterprise-600 whitespace-nowrap">{{ $assignment->user->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                                <td class="text-enterprise-600 whitespace-nowrap">{{ $assignment->user->last_login_at?->format('M j, Y g:i A') ?? '—' }}</td>
                                 <td class="text-right space-x-3">
                                     @if ($canManageClients)
                                         <a href="{{ route('platform.clients.users.edit', [$organization, $assignment->user]) }}" class="link-action">Edit</a>
@@ -82,7 +86,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="py-10 text-center text-enterprise-500">No users assigned to this organization.</td>
+                                <td colspan="6" class="py-10 text-center text-enterprise-500">No users assigned to this organization.</td>
                             </tr>
                         @endforelse
                     </tbody>
