@@ -32,10 +32,82 @@ class PlatformDataSourceManagementTest extends TestCase
         $this->assertNotNull($dataSource);
         $this->assertSame(DataSourceDriver::InformData->value, $dataSource->driver);
         $this->assertSame('https://api-monitoring.informdata.com/', $dataSource->documentation_url);
+        $this->assertSame('https://api-monitoring.informdata.com', $dataSource->base_url);
         $this->assertContains('continuous_monitoring', $dataSource->capabilities);
+        $this->assertTrue($dataSource->needsCredentials());
         $this->assertTrue($dataSource->needsConfiguration());
         $this->assertFalse($dataSource->is_active);
         $this->assertNull($dataSource->config);
+    }
+
+    public function test_informdata_seeder_applies_env_credentials_without_overwriting_existing(): void
+    {
+        config([
+            'informdata.username' => 'env-user',
+            'informdata.password' => 'env-pass',
+            'informdata.auto_enable' => true,
+        ]);
+
+        DataSource::query()->create([
+            'name' => 'InformData Continuous Monitoring',
+            'slug' => 'informdata-monitoring',
+            'driver' => DataSourceDriver::InformData->value,
+            'base_url' => 'https://production.informdata.example',
+            'documentation_url' => 'https://api-monitoring.informdata.com/',
+            'capabilities' => DataSourceDriver::InformData->defaultCapabilities(),
+            'config' => [
+                'username' => 'saved-user',
+                'password' => 'saved-pass',
+            ],
+            'is_active' => true,
+        ]);
+
+        $this->seed(InformDataDataSourceSeeder::class);
+
+        $dataSource = DataSource::query()->where('slug', 'informdata-monitoring')->firstOrFail();
+
+        $this->assertSame('https://production.informdata.example', $dataSource->base_url);
+        $this->assertSame('saved-user', $dataSource->config['username']);
+        $this->assertTrue($dataSource->is_active);
+
+        DataSource::query()->where('slug', 'informdata-monitoring')->delete();
+
+        $this->seed(InformDataDataSourceSeeder::class);
+
+        $seeded = DataSource::query()->where('slug', 'informdata-monitoring')->firstOrFail();
+
+        $this->assertSame('env-user', $seeded->config['username']);
+        $this->assertTrue($seeded->is_active);
+    }
+
+    public function test_informdata_test_connection_command_updates_status(): void
+    {
+        Http::fake([
+            'https://informdata.example/token' => Http::response(['access_token' => 'test-token'], 200),
+            'https://informdata.example/api/IntegrationApi/GetCompanyProfiles' => Http::response(['profiles' => []], 200),
+        ]);
+
+        DataSource::query()->create([
+            'name' => 'InformData',
+            'slug' => 'informdata-monitoring',
+            'driver' => DataSourceDriver::InformData->value,
+            'base_url' => 'https://informdata.example',
+            'documentation_url' => 'https://api-monitoring.informdata.com/',
+            'capabilities' => DataSourceDriver::InformData->defaultCapabilities(),
+            'config' => [
+                'username' => 'api-user',
+                'password' => 'secret-pass',
+            ],
+        ]);
+
+        $this->artisan('informdata:test-connection')
+            ->assertSuccessful()
+            ->expectsOutputToContain('Connected to InformData');
+
+        $dataSource = DataSource::query()->where('slug', 'informdata-monitoring')->firstOrFail();
+
+        $this->assertSame('ok', $dataSource->last_connection_status);
+        $this->assertNotNull($dataSource->last_connected_at);
     }
 
     public function test_platform_admin_can_view_edit_form_for_data_source(): void

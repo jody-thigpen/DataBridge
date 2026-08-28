@@ -47,8 +47,10 @@
                             <td class="max-w-[12rem] truncate text-enterprise-600" title="{{ $dataSource->driverEnum()->label() }}">{{ $dataSource->driverEnum()->label() }}</td>
                             <td class="max-w-[14rem] truncate text-enterprise-600" title="{{ $dataSource->displayBaseUrl() }}">{{ $dataSource->displayBaseUrl() }}</td>
                             <td>
-                                @if ($dataSource->needsConfiguration())
+                                @if (blank($dataSource->base_url))
                                     <span class="badge badge-muted">Needs setup</span>
+                                @elseif ($dataSource->needsCredentials())
+                                    <span class="badge badge-muted">Needs credentials</span>
                                 @elseif ($dataSource->last_connected_at)
                                     <span @class(['badge', 'badge-success' => $dataSource->isConnected(), 'badge-muted' => ! $dataSource->isConnected()])>
                                         {{ $dataSource->isConnected() ? 'Verified' : 'Failed' }}

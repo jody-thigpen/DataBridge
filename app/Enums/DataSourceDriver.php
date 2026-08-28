@@ -16,7 +16,14 @@ enum DataSourceDriver: string
     public function documentationUrl(): ?string
     {
         return match ($this) {
-            self::InformData => 'https://api-monitoring.informdata.com/',
+            self::InformData => config('informdata.documentation_url'),
+        };
+    }
+
+    public function defaultBaseUrl(): ?string
+    {
+        return match ($this) {
+            self::InformData => config('informdata.base_url'),
         };
     }
 

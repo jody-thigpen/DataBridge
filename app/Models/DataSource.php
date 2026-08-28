@@ -62,18 +62,27 @@ class DataSource extends Model
         return $this->last_connection_status === 'ok';
     }
 
-    public function needsConfiguration(): bool
+    public function needsCredentials(): bool
     {
         $config = $this->config ?? [];
 
-        return blank($this->base_url)
-            || blank($config['username'] ?? null)
+        return blank($config['username'] ?? null)
             || blank($config['password'] ?? null);
+    }
+
+    public function needsConfiguration(): bool
+    {
+        return blank($this->base_url) || $this->needsCredentials();
     }
 
     public function displayBaseUrl(): string
     {
-        return $this->needsConfiguration() ? 'Not configured' : $this->base_url;
+        return blank($this->base_url) ? 'Not configured' : $this->base_url;
+    }
+
+    public function isReadyToTest(): bool
+    {
+        return ! blank($this->base_url) && ! $this->needsCredentials();
     }
 
     /**

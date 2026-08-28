@@ -30,6 +30,26 @@ DataBridge uses two MariaDB/MySQL databases on the same remote host for developm
 
 PHPUnit uses in-memory SQLite for both connections via `phpunit.xml` — no `.env` change needed for tests.
 
+## InformData Continuous Monitoring
+
+Optional shortcuts for local/sandbox setup. Values are copied into the `informdata-monitoring` data source when you run `php artisan db:seed --class=InformDataDataSourceSeeder`. Production credentials can also be entered under **Platform → Data sources → Edit**.
+
+| Variable | Purpose |
+|----------|---------|
+| `INFORMDATA_BASE_URL` | API host (default: `https://api-monitoring.informdata.com`) |
+| `INFORMDATA_USERNAME` | InformData API username |
+| `INFORMDATA_PASSWORD` | InformData API password |
+| `INFORMDATA_WEBHOOK_SECRET` | Optional webhook validation secret |
+| `INFORMDATA_AUTO_ENABLE` | Set `true` to mark the source active when credentials are seeded |
+
+Verify from the CLI:
+
+```bash
+php artisan informdata:test-connection
+```
+
+API reference: [InformData Continuous Monitoring API](https://api-monitoring.informdata.com/)
+
 ## Session & queue
 
 | Variable | Purpose |

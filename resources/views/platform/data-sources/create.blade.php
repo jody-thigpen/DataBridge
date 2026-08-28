@@ -44,8 +44,11 @@
                 </div>
                 <div>
                     <x-input-label for="base_url" value="API base URL" />
-                    <x-text-input id="base_url" name="base_url" type="url" class="mt-1 block w-full" :value="old('base_url')" placeholder="https://your-informdata-base-url" required />
-                    <p class="mt-1 text-xs text-enterprise-500">InformData provides this BASE_URL during onboarding. Token requests go to <code>/token</code>.</p>
+                    <x-text-input id="base_url" name="base_url" type="url" class="mt-1 block w-full" :value="old('base_url', $driverEnum->defaultBaseUrl())" placeholder="https://api-monitoring.informdata.com" required />
+                    <p class="mt-1 text-xs text-enterprise-500">
+                        Continuous Monitoring API base URL. Token requests go to <code>/token</code>.
+                        <a href="{{ $driverEnum->documentationUrl() }}" target="_blank" rel="noopener" class="link-action">View API docs</a>
+                    </p>
                     <x-input-error :messages="$errors->get('base_url')" class="mt-2" />
                 </div>
                 <div>

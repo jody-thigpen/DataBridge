@@ -5,35 +5,84 @@
                 <a href="{{ route('platform.data-sources.index') }}" class="btn-secondary">Back to data sources</a>
                 @if ($canManageDataSources)
                     <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="btn-primary">Edit</a>
-                    @unless ($dataSource->needsConfiguration())
+                    @if ($dataSource->isReadyToTest())
                         <form method="POST" action="{{ route('platform.data-sources.test', $dataSource) }}">
                             @csrf
                             <button type="submit" class="btn-secondary">Test connection</button>
                         </form>
-                    @endunless
+                    @endif
                 @endif
             </x-slot>
         </x-page-header>
     </x-slot>
+
+    @if ($canManageDataSources && $dataSource->driverEnum() === \App\Enums\DataSourceDriver::InformData && $dataSource->needsConfiguration())
+        <div class="panel mb-5">
+            <div class="panel-header">
+                <h2 class="panel-title">Setup checklist</h2>
+            </div>
+            <div class="panel-body space-y-3 text-sm text-enterprise-700">
+                <ol class="list-decimal space-y-2 pl-5">
+                    <li @class(['text-enterprise-900 font-medium' => ! blank($dataSource->base_url)])>
+                        API base URL is set to the Continuous Monitoring host
+                        @unless (blank($dataSource->base_url))
+                            (<code>{{ $dataSource->base_url }}</code>)
+                        @endunless
+                    </li>
+                    <li @class(['text-enterprise-900 font-medium' => ! $dataSource->needsCredentials()])>
+                        Enter the InformData API username and password
+                    </li>
+                    <li @class(['text-enterprise-900 font-medium' => $dataSource->isConnected()])>
+                        Run <strong>Test connection</strong> to verify access
+                    </li>
+                    <li @class(['text-enterprise-900 font-medium' => $dataSource->is_active])>
+                        Enable the connection for report orders
+                    </li>
+                </ol>
+                <p class="text-enterprise-600">
+                    Reference:
+                    <a href="{{ $dataSource->documentation_url }}" target="_blank" rel="noopener" class="link-action">InformData Continuous Monitoring API</a>.
+                    Optional: set <code>INFORMDATA_USERNAME</code> and <code>INFORMDATA_PASSWORD</code> in <code>.env</code>, then run
+                    <code>php artisan db:seed --class=InformDataDataSourceSeeder</code>.
+                </p>
+            </div>
+        </div>
+    @endif
 
     @if ($canManageDataSources)
         <div class="panel mb-5">
             <div class="panel-body flex flex-wrap items-center justify-between gap-3">
                 <p class="text-sm text-enterprise-700">
                     @if ($dataSource->needsConfiguration())
-                        This connection still needs an API base URL and credentials before it can be used for report orders.
+                        @if ($dataSource->needsCredentials())
+                            Add your InformData API credentials to finish setup.
+                        @else
+                            Credentials are saved. Test the connection, then enable this source.
+                        @endif
                     @else
                         Update the API base URL, documentation link, or credentials for this vendor connection.
                     @endif
                 </p>
-                <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="btn-primary shrink-0">Edit connection</a>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="btn-primary shrink-0">Edit connection</a>
+                    @if ($dataSource->isReadyToTest())
+                        <form method="POST" action="{{ route('platform.data-sources.test', $dataSource) }}">
+                            @csrf
+                            <button type="submit" class="btn-secondary">Test connection</button>
+                        </form>
+                    @endif
+                </div>
             </div>
         </div>
     @endif
 
     @if ($dataSource->needsConfiguration() && $canManageDataSources)
         <div class="alert-error mb-5">
-            This data source has not been configured yet. Enter the API base URL, username, and password provided by InformData, then test the connection and enable it for report orders.
+            @if ($dataSource->needsCredentials())
+                Enter the InformData API username and password, then test the connection and enable this source for report orders.
+            @else
+                Credentials are saved. Test the connection, then enable this source for report orders.
+            @endif
         </div>
     @endif
 
