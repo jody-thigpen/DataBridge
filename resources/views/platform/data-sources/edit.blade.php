@@ -7,6 +7,18 @@
         </x-page-header>
     </x-slot>
 
+    @if ($dataSource->last_connected_at)
+        <div @class(['alert-success mb-5' => $dataSource->isConnected(), 'alert-error mb-5' => ! $dataSource->isConnected()])>
+            Last connection test:
+            {{ $dataSource->last_connected_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
+            — {{ $dataSource->last_connection_message }}
+        </div>
+    @elseif (! $dataSource->needsConfiguration())
+        <div class="alert-error mb-5">
+            This connection has not been tested yet. Save any changes, then test the connection from the data source details page.
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('platform.data-sources.update', $dataSource) }}" class="grid gap-5 lg:grid-cols-2">
         @csrf
         @method('PATCH')
@@ -33,6 +45,9 @@
                 <div>
                     <x-input-label for="base_url" value="API base URL" />
                     <x-text-input id="base_url" name="base_url" type="url" class="mt-1 block w-full" :value="old('base_url', $dataSource->base_url)" required />
+                    @if ($dataSource->driverEnum() === \App\Enums\DataSourceDriver::InformData)
+                        <p class="mt-1 text-xs text-enterprise-500">Token requests go to <code>/token</code> under this base URL.</p>
+                    @endif
                     <x-input-error :messages="$errors->get('base_url')" class="mt-2" />
                 </div>
                 <div>

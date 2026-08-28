@@ -47,11 +47,10 @@
                                     {{ $dataSource->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
-                            <td class="text-right space-x-3">
-                                @if ($canManageDataSources && $dataSource->needsConfiguration())
-                                    <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="link-action">Configure</a>
-                                @else
-                                    <a href="{{ route('platform.data-sources.show', $dataSource) }}" class="link-action">View details</a>
+                            <td class="text-right space-x-3 whitespace-nowrap">
+                                <a href="{{ route('platform.data-sources.show', $dataSource) }}" class="link-action">View</a>
+                                @if ($canManageDataSources)
+                                    <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="link-action">{{ $dataSource->needsConfiguration() ? 'Configure' : 'Edit' }}</a>
                                 @endif
                             </td>
                         </tr>

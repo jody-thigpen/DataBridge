@@ -38,6 +38,24 @@ class PlatformDataSourceManagementTest extends TestCase
         $this->assertNull($dataSource->config);
     }
 
+    public function test_platform_admin_can_view_edit_form_for_data_source(): void
+    {
+        $this->seed(InformDataDataSourceSeeder::class);
+
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user->assignRole(PlatformRole::Admin);
+
+        $dataSource = DataSource::query()->where('slug', 'informdata-monitoring')->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('platform.data-sources.edit', $dataSource))
+            ->assertOk()
+            ->assertSee('Configure InformData Continuous Monitoring')
+            ->assertSee('Connection details')
+            ->assertSee('API credentials')
+            ->assertSee('Enable for report orders');
+    }
+
     public function test_platform_admin_can_configure_seeded_informdata_connection(): void
     {
         $this->seed(InformDataDataSourceSeeder::class);
@@ -170,12 +188,26 @@ class PlatformDataSourceManagementTest extends TestCase
 
         $this->seed(InformDataDataSourceSeeder::class);
 
+        $dataSource = DataSource::query()->where('slug', 'informdata-monitoring')->firstOrFail();
+
         $this->actingAs($admin)
             ->get(route('platform.data-sources.index'))
             ->assertOk()
             ->assertSee('InformData Continuous Monitoring')
-            ->assertSee('Configure')
+            ->assertSee('>Configure</a>', false)
+            ->assertSee('>View</a>', false)
             ->assertSee('New data source');
+
+        $dataSource->update([
+            'base_url' => 'https://informdata.example',
+            'config' => ['username' => 'api-user', 'password' => 'secret-pass'],
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('platform.data-sources.index'))
+            ->assertSee('>Edit</a>', false)
+            ->assertDontSee('>Configure</a>', false);
 
         $this->actingAs($support)
             ->get(route('platform.data-sources.index'))
