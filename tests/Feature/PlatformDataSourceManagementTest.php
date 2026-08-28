@@ -50,10 +50,35 @@ class PlatformDataSourceManagementTest extends TestCase
         $this->actingAs($user)
             ->get(route('platform.data-sources.edit', $dataSource))
             ->assertOk()
-            ->assertSee('Configure InformData Continuous Monitoring')
             ->assertSee('Connection details')
             ->assertSee('API credentials')
             ->assertSee('Enable for report orders');
+
+        $this->actingAs($user)
+            ->get(route('platform.data-sources.show', $dataSource))
+            ->assertOk()
+            ->assertSee('Edit connection');
+    }
+
+    public function test_support_user_can_view_data_sources_but_not_edit(): void
+    {
+        $this->seed(InformDataDataSourceSeeder::class);
+
+        $support = User::factory()->create(['email_verified_at' => now()]);
+        $support->assignRole(PlatformRole::Support);
+
+        $this->actingAs($support)
+            ->get(route('platform.data-sources.index'))
+            ->assertOk()
+            ->assertSee('>View</a>', false)
+            ->assertDontSee('>Edit</a>', false)
+            ->assertSee('Editing requires a Platform Admin or Operations account');
+
+        $dataSource = DataSource::query()->where('slug', 'informdata-monitoring')->firstOrFail();
+
+        $this->actingAs($support)
+            ->get(route('platform.data-sources.edit', $dataSource))
+            ->assertForbidden();
     }
 
     public function test_platform_admin_can_configure_seeded_informdata_connection(): void
@@ -194,7 +219,8 @@ class PlatformDataSourceManagementTest extends TestCase
             ->get(route('platform.data-sources.index'))
             ->assertOk()
             ->assertSee('InformData Continuous Monitoring')
-            ->assertSee('>Configure</a>', false)
+            ->assertSee('btn-secondary')
+            ->assertSee('>Edit</a>', false)
             ->assertSee('>View</a>', false)
             ->assertSee('New data source');
 
@@ -206,8 +232,7 @@ class PlatformDataSourceManagementTest extends TestCase
 
         $this->actingAs($admin)
             ->get(route('platform.data-sources.index'))
-            ->assertSee('>Edit</a>', false)
-            ->assertDontSee('>Configure</a>', false);
+            ->assertSee('>Edit</a>', false);
 
         $this->actingAs($support)
             ->get(route('platform.data-sources.index'))

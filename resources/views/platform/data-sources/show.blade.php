@@ -4,9 +4,7 @@
             <x-slot name="actions">
                 <a href="{{ route('platform.data-sources.index') }}" class="btn-secondary">Back to data sources</a>
                 @if ($canManageDataSources)
-                    <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="btn-primary">
-                        {{ $dataSource->needsConfiguration() ? 'Configure connection' : 'Edit' }}
-                    </a>
+                    <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="btn-primary">Edit</a>
                     @unless ($dataSource->needsConfiguration())
                         <form method="POST" action="{{ route('platform.data-sources.test', $dataSource) }}">
                             @csrf
@@ -17,6 +15,21 @@
             </x-slot>
         </x-page-header>
     </x-slot>
+
+    @if ($canManageDataSources)
+        <div class="panel mb-5">
+            <div class="panel-body flex flex-wrap items-center justify-between gap-3">
+                <p class="text-sm text-enterprise-700">
+                    @if ($dataSource->needsConfiguration())
+                        This connection still needs an API base URL and credentials before it can be used for report orders.
+                    @else
+                        Update the API base URL, documentation link, or credentials for this vendor connection.
+                    @endif
+                </p>
+                <a href="{{ route('platform.data-sources.edit', $dataSource) }}" class="btn-primary shrink-0">Edit connection</a>
+            </div>
+        </div>
+    @endif
 
     @if ($dataSource->needsConfiguration() && $canManageDataSources)
         <div class="alert-error mb-5">

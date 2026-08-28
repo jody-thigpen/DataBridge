@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header :title="($dataSource->needsConfiguration() ? 'Configure ' : 'Edit ') . $dataSource->name" subtitle="Enter the API base URL and credentials provided by your data vendor.">
+        <x-page-header :title="($dataSource->needsConfiguration() ? 'Configure ' : 'Edit ').$dataSource->name" subtitle="Update the API base URL, documentation link, and credentials for this vendor connection.">
             <x-slot name="actions">
                 <a href="{{ route('platform.data-sources.show', $dataSource) }}" class="btn-secondary">Cancel</a>
             </x-slot>
